@@ -1,8 +1,8 @@
 # plex-recent-media
 
-Super early build for testing
+## Super early build for testing
 
-Component:
+**Component:**
 
     - platform: plex_recent_media
       token: { your plex token }
@@ -11,10 +11,10 @@ Component:
       item_count: { Number of recent downloads to show }
 
 
-Lovelace:
+**Lovelace:**
 
     - type: custom:upcoming-media-card
       entity: sensor.plex_recent_media
 
-Set plex server network setting: "Secure connections: Preferred"
+Set plex server network setting: "Secure connections: Preferred"</br></br>
 TV only at the moment
