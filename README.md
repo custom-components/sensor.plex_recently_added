@@ -20,3 +20,5 @@ This is a component to feed the associated Lovelace card: [Upcoming_Media_Card](
 
 Set plex server network setting: "Secure connections: Preferred"</br></br>
 TV only at the moment
+
+You will get an error about the component taking long to update. Should only happen at first reboot with component.
