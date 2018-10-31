@@ -2,7 +2,7 @@
 Plex component for the Upcoming Media Lovelace card.
 
 """
-import logging, time, re, os, os.path, glob, json, math, requests
+import logging, time, re, os, os.path, json, math, requests
 from datetime import date, datetime
 from PIL import Image
 from io import BytesIO
