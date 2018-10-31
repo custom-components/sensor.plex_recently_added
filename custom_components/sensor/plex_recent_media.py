@@ -16,7 +16,6 @@ __version__ = '0.0.1'
 _LOGGER = logging.getLogger(__name__)
 
 CONF_ITEMS = 'item_count'
-CONF_URLBASE = 'urlbase'
 CONF_TOKEN = 'token'
 
 
