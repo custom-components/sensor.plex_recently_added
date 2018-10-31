@@ -2,7 +2,7 @@
 
 ## Super early build for testing
 
-This is a component required to use the associated Lovelace card: [Upcoming_Media_Card](https://github.com/custom-cards/upcoming-media-card)
+This is a component to feed the associated Lovelace card: [Upcoming_Media_Card](https://github.com/custom-cards/upcoming-media-card)
 
 **Component:**
 
