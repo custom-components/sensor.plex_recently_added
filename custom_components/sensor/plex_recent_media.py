@@ -64,7 +64,6 @@ class Plex_RecentSensor(Entity):
         self._name = SENSOR_TYPES[self.type][0]
         self.attribNum = 0
         self.now = str(get_date(self._tz))
-        self.ids = []
 
     @property
     def name(self):
@@ -106,7 +105,7 @@ class Plex_RecentSensor(Entity):
                 pre['rating'] = '\N{BLACK STAR}' + str(show.get('rating', ''))
             else:
                 pre['rating'] = ''
-            pre['number'] = ('S{:02d}E{:02d}').format(show.get('parentIndex', ''), show.get('parentIndex', ''))
+            pre['number'] = ('S{:02d}E{:02d}').format(show.get('parentIndex', ''), show.get('index', ''))
             pre['airdate'] = datetime.utcfromtimestamp(show.get('addedAt')).isoformat() + 'Z'
             if math.floor(show.get('duration') / 60000) > 0:
                 pre['runtime'] = math.floor(show.get('duration') / 60000)
@@ -143,24 +142,16 @@ class Plex_RecentSensor(Entity):
             self._state = self.attribNum
 
         directory = 'www/custom-lovelace/upcoming-media-card/images/plex/'
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        if not os.path.isfile(directory + 'check.txt'):
-            check = open(directory + 'check.txt', 'w+')
-            check.close()
+        if not os.path.exists(directory): os.makedirs(directory)
 
-        if self.data[0]['ratingKey'] != open(directory + 'check.txt').read():
-            check = open(directory + 'check.txt', 'w+')
-            check.write(str(self.data[0]['ratingKey']))
-            check.close()
-            
-            for show in self.data:
-                self.ids.append(str(show['ratingKey']))
-                
+        media_ids = []
+        for show in self.data: media_ids.append(show['ratingKey'])
+
+        """Get imgs for shown media, delete imgs for media no longer in list"""
+        if not set(media_ids).issubset(os.listdir(directory)):
             for filename in os.listdir(directory):
-                if filename.endswith('.jpg') and filename[1:-4] not in self.ids: 
+                if str(media_ids).find(filename[1:-4]) == -1: 
                     os.remove(directory + filename)
-
             for show in self.data:
                 if not os.path.isfile(directory + 'p' + show['ratingKey'] + '.jpg'):
                     try:
