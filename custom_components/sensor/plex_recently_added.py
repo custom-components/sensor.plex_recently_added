@@ -1,5 +1,5 @@
 """
-Plex component for the Upcoming Media Lovelace card.
+Plex component to feed the Upcoming Media Lovelace card for Home Assistant.
 
 """
 import logging, time, re, os, os.path, json, math, requests, urllib.parse
@@ -9,7 +9,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.0.4'
+__version__ = '0.0.5'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -99,6 +99,7 @@ class PlexRecentlyAddedSensor(Entity):
 
     def update(self):
         media_ids = []
+        sections = []
         directory = 'www/custom-lovelace/upcoming-media-card/images/plex/'
         recently_added = ('http://{0}:{1}/library/sections/{2}/recentlyAdded?'
             'X-Plex-Token={3}&X-Plex-Container-Start=0&X-Plex-Container-Size={4}')
@@ -108,17 +109,15 @@ class PlexRecentlyAddedSensor(Entity):
 
         """Get all library section IDs"""
         try:
-            sections = []
-            lib = requests.get(libraries.format(
-                    self.host, self.port, self.token),
+            lib = requests.get(libraries.format(self.host, self.port, self.token),
                     headers={ 'Accept': 'application/json' }, timeout=10)
-            for key in lib.json()['MediaContainer']['Directory']:
-                sections.append(key['key'])
+            for lib_sec in lib.json()['MediaContainer']['Directory']:
+                sections.append(lib_sec['key'])
         except OSError:
             _LOGGER.warning("Host %s is not available", self.host)
             self._state = None
             return
-        
+
         """Get JSON from each library section, combine, and sort"""
         if lib.status_code == 200:
             self.data = []
@@ -127,38 +126,38 @@ class PlexRecentlyAddedSensor(Entity):
                     self.host, self.port, key, self.token, self.items),
                     headers={ 'Accept': 'application/json' }, timeout=10)
                 self.data += recent.json()['MediaContainer']['Metadata']
-        self.data = sorted(self.data, key = lambda i: i['addedAt'], reverse=True)
-
-        if not os.path.exists(directory): os.makedirs(directory)
-        for show in self.data[:self.items]: media_ids.append(show['ratingKey'])
-
-        """Compare directory contents to media list for missing images"""
-        if not set(media_ids).issubset(os.listdir(directory)):
-            for filename in os.listdir(directory):
+            self.data = sorted(self.data, key = lambda i: i['addedAt'], reverse=True)
+    
+            if not os.path.exists(directory): os.makedirs(directory)
+            for show in self.data[:self.items]: media_ids.append(show['ratingKey'])
+    
+            """Compare directory contents to media list for missing images"""
+            if not set(media_ids).issubset(os.listdir(directory)):
                 """Delete image if media item is no longer in list"""
-                if filename.endswith('.jpg') and str(media_ids).find(filename[1:-4]) == -1: 
-                    os.remove(directory + filename)
-            """Get resized images from Plex"""
-            for show in self.data[:self.items]:
-                if show.get('type') == 'movie':
-                    poster = urllib.parse.quote_plus(show.get('thumb'))
-                    fanart = urllib.parse.quote_plus(show.get('art'))
-                elif show.get('type') == 'episode': 
-                    poster = urllib.parse.quote_plus(show.get('grandparentThumb'))
-                    fanart = urllib.parse.quote_plus(show.get('grandparentArt'))
-                else: continue
-                if not os.path.isfile(directory + 'f' + show['ratingKey'] + '.jpg'):
-                    try:
-                        r = requests.get(images.format(
-                            self.host, self.port, fanart, self.token)).content
-                        open(directory + 'f' + show['ratingKey'] + '.jpg', 'wb').write(r)
-                    except: pass
-                if not os.path.isfile(directory + 'p' + show['ratingKey'] + '.jpg'):
-                    try:
-                        r = requests.get(images.format(
-                            self.host, self.port, poster, self.token)).content
-                        open(directory + 'p' + show['ratingKey'] + '.jpg', 'wb').write(r)
-                    except: continue
+                for filename in os.listdir(directory):
+                    if filename.endswith('.jpg') and str(media_ids).find(filename[1:-4]) == -1: 
+                        os.remove(directory + filename)
+                """Get resized images from Plex photo/:/transcode"""
+                for show in self.data[:self.items]:
+                    if show.get('type') == 'movie':
+                        poster = urllib.parse.quote_plus(show.get('thumb'))
+                        fanart = urllib.parse.quote_plus(show.get('art'))
+                    elif show.get('type') == 'episode': 
+                        poster = urllib.parse.quote_plus(show.get('grandparentThumb'))
+                        fanart = urllib.parse.quote_plus(show.get('grandparentArt'))
+                    else: continue
+                    if not os.path.isfile(directory + 'f' + show['ratingKey'] + '.jpg'):
+                        try:
+                            r = requests.get(images.format(
+                                self.host, self.port, fanart, self.token)).content
+                            open(directory + 'f' + show['ratingKey'] + '.jpg', 'wb').write(r)
+                        except: pass
+                    if not os.path.isfile(directory + 'p' + show['ratingKey'] + '.jpg'):
+                        try:
+                            r = requests.get(images.format(
+                                self.host, self.port, poster, self.token)).content
+                            open(directory + 'p' + show['ratingKey'] + '.jpg', 'wb').write(r)
+                        except: continue
 
 def get_date(zone, offset=0):
     """Get date based on timezone and offset of days."""
