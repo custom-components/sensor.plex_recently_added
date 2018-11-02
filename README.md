@@ -17,5 +17,3 @@ This is a component to feed the associated Lovelace card: [Upcoming_Media_Card](
 
     - type: custom:upcoming-media-card
       entity: sensor.plex_recently_added
-
-**Need to set "Secure connections" to "Preferred" in Plex network settings**
