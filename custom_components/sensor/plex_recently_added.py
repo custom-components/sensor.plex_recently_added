@@ -9,7 +9,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.0.5'
+__version__ = '0.0.6'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class PlexRecentlyAddedSensor(Entity):
         from pytz import timezone
         self._tz = timezone(str(hass.config.time_zone))
         self.now = str(get_date(self._tz))
-        self.ssl = conf.get(CONF_SSL)
+        self.ssl = 's' if conf.get(CONF_SSL) else ''
         self.host = conf.get(CONF_HOST)
         self.port = conf.get(CONF_PORT)
         self.token = conf.get(CONF_TOKEN)
@@ -98,19 +98,21 @@ class PlexRecentlyAddedSensor(Entity):
         return attributes
 
     def update(self):
+        session = requests.Session()
+        session.verify = False # Cert is for Plex's domain not our api server
         media_ids = []
         sections = []
         directory = 'www/custom-lovelace/upcoming-media-card/images/plex/'
-        recently_added = ('http://{0}:{1}/library/sections/{2}/recentlyAdded?'
-            'X-Plex-Token={3}&X-Plex-Container-Start=0&X-Plex-Container-Size={4}')
-        images = ('http://{0}:{1}/photo/:/transcode?width=200&height=200&'
-            'minSize=1&url={2}%3FX-Plex-Token%3D{3}&X-Plex-Token={3}')
-        libraries = 'http://{0}:{1}/library/sections/all/?X-Plex-Token={2}'
+        recently_added = ('http{0}://{1}:{2}/library/sections/{3}/recentlyAdded?'
+            'X-Plex-Token={4}&X-Plex-Container-Start=0&X-Plex-Container-Size={5}')
+        image_url = ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200&'
+            'minSize=1&url={3}%3FX-Plex-Token%3D{4}&X-Plex-Token={4}')
+        libraries = 'http{0}://{1}:{2}/library/sections/all/?X-Plex-Token={3}'
 
-        """Get all library section IDs"""
-        try:
-            lib = requests.get(libraries.format(self.host, self.port, self.token),
-                    headers={ 'Accept': 'application/json' }, timeout=10)
+        """Get all library section keys"""
+        try:lib = session.get(libraries.format(
+                self.ssl, self.host, self.port, self.token),
+                headers={ 'Accept': 'application/json' }, timeout=10)
             for lib_sec in lib.json()['MediaContainer']['Directory']:
                 sections.append(lib_sec['key'])
         except OSError:
@@ -122,8 +124,8 @@ class PlexRecentlyAddedSensor(Entity):
         if lib.status_code == 200:
             self.data = []
             for key in sections:
-                recent = requests.get(recently_added.format(
-                    self.host, self.port, key, self.token, self.items),
+                recent = session.get(recently_added.format(
+                    self.ssl, self.host, self.port, key, self.token, self.items),
                     headers={ 'Accept': 'application/json' }, timeout=10)
                 self.data += recent.json()['MediaContainer']['Metadata']
             self.data = sorted(self.data, key = lambda i: i['addedAt'], reverse=True)
@@ -133,10 +135,10 @@ class PlexRecentlyAddedSensor(Entity):
     
             """Compare directory contents to media list for missing images"""
             if not set(media_ids).issubset(os.listdir(directory)):
-                """Delete image if media item is no longer in list"""
-                for filename in os.listdir(directory):
-                    if filename.endswith('.jpg') and str(media_ids).find(filename[1:-4]) == -1: 
-                        os.remove(directory + filename)
+                """Delete image if item is no longer in list"""
+                for file in os.listdir(directory):
+                    if file.endswith('jpg') and str(media_ids).find(file[1:-4]) == -1: 
+                        os.remove(directory + file)
                 """Get resized images from Plex photo/:/transcode"""
                 for show in self.data[:self.items]:
                     if show.get('type') == 'movie':
@@ -147,15 +149,13 @@ class PlexRecentlyAddedSensor(Entity):
                         fanart = urllib.parse.quote_plus(show.get('grandparentArt'))
                     else: continue
                     if not os.path.isfile(directory + 'f' + show['ratingKey'] + '.jpg'):
-                        try:
-                            r = requests.get(images.format(
-                                self.host, self.port, fanart, self.token)).content
+                        try:r = session.get(image_url.format(
+                            self.ssl, self.host, self.port, fanart, self.token)).content
                             open(directory + 'f' + show['ratingKey'] + '.jpg', 'wb').write(r)
                         except: pass
                     if not os.path.isfile(directory + 'p' + show['ratingKey'] + '.jpg'):
-                        try:
-                            r = requests.get(images.format(
-                                self.host, self.port, poster, self.token)).content
+                        try:r = session.get(image_url.format(
+                            self.ssl, self.host, self.port, poster, self.token)).content
                             open(directory + 'p' + show['ratingKey'] + '.jpg', 'wb').write(r)
                         except: continue
 
