@@ -110,7 +110,8 @@ class PlexRecentlyAddedSensor(Entity):
         libraries = 'http{0}://{1}:{2}/library/sections/all/?X-Plex-Token={3}'
 
         """Get all library section keys"""
-        try:lib = session.get(libraries.format(
+        try:
+            lib = session.get(libraries.format(
                 self.ssl, self.host, self.port, self.token),
                 headers={ 'Accept': 'application/json' }, timeout=10)
             for lib_sec in lib.json()['MediaContainer']['Directory']:
@@ -149,13 +150,15 @@ class PlexRecentlyAddedSensor(Entity):
                         fanart = urllib.parse.quote_plus(show.get('grandparentArt'))
                     else: continue
                     if not os.path.isfile(directory + 'f' + show['ratingKey'] + '.jpg'):
-                        try:r = session.get(image_url.format(
-                            self.ssl, self.host, self.port, fanart, self.token)).content
+                        try:
+                            r = session.get(image_url.format(
+                                self.ssl, self.host, self.port, fanart, self.token)).content
                             open(directory + 'f' + show['ratingKey'] + '.jpg', 'wb').write(r)
                         except: pass
                     if not os.path.isfile(directory + 'p' + show['ratingKey'] + '.jpg'):
-                        try:r = session.get(image_url.format(
-                            self.ssl, self.host, self.port, poster, self.token)).content
+                        try:
+                            r = session.get(image_url.format(
+                                self.ssl, self.host, self.port, poster, self.token)).content
                             open(directory + 'p' + show['ratingKey'] + '.jpg', 'wb').write(r)
                         except: continue
 
