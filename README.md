@@ -7,10 +7,11 @@ This is a component to feed the associated Lovelace card: [Upcoming_Media_Card](
 **Component:**
 
     - platform: plex_recently_added
-      token: { your plex token }
-      host: { IP address }
-      port: { port }
-      item_count: { Number of recent downloads to show }
+      token: { your plex token || required}
+      ssl: {true or false || optional, default 'false'}
+      host: { IP address || optional, default 'localhost' }
+      port: { port || optional, default '32400'}
+      item_count: { Number of recent downloads to show || optional, default '5'}
 
 
 **Lovelace:**
