@@ -1,5 +1,10 @@
 """
-Plex component to feed the Upcoming Media Lovelace card for Home Assistant.
+Home Assistant component to feed the Upcoming Media Lovelace card with
+recently added media from Plex.
+
+https://github.com/custom-components/sensor.plex_recently_added
+
+https://github.com/custom-cards/upcoming-media-card
 
 """
 import logging, time, re, os, os.path, json, math, requests, urllib.parse
@@ -9,19 +14,19 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.0.7'
+__version__ = '0.0.8'
 
 _LOGGER = logging.getLogger(__name__)
 
 CONF_TOKEN = 'token'
-CONF_ITEMS = 'item_count'
+CONF_MAX = 'max'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SSL, default=False): cv.boolean,
     vol.Optional(CONF_HOST, default='localhost'): cv.string,
     vol.Optional(CONF_PORT, default=32400): cv.port,
     vol.Required(CONF_TOKEN): cv.string,
-    vol.Optional(CONF_ITEMS, default=5): cv.string,
+    vol.Optional(CONF_MAX, default=5): cv.string,
 })
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
@@ -37,9 +42,10 @@ class PlexRecentlyAddedSensor(Entity):
         self.host = conf.get(CONF_HOST)
         self.port = conf.get(CONF_PORT)
         self.token = conf.get(CONF_TOKEN)
-        self.items = int(conf.get(CONF_ITEMS))
+        self.max_items = int(conf.get(CONF_MAX))
         self._state = None
         self.attribNum = 0
+        self.refresh = False
         self.data = []
 
     @property
@@ -52,50 +58,62 @@ class PlexRecentlyAddedSensor(Entity):
 
     @property
     def device_state_attributes(self):
-        """Return JSON for the sensor."""
-        self.attribNum = 0
-        attributes = {}
-        default = {}
-        data = []
-        default['title_default'] = '$title'
-        default['line1_default'] = '$episode'
-        default['line2_default'] = '$release'
-        default['line3_default'] = '$rating - $runtime'
-        default['line4_default'] = '$number - $studio'
-        default['icon'] = 'mdi:eye-off'
-        data.append(default)
-        for show in self.data[:self.items]:
-            pre = {}
-            directory = '../local/custom-lovelace/upcoming-media-card/images/plex/'
-            if show.get('type') == 'movie':
+        """Build JSON for the sensor."""
+        if self.refresh:
+            self.attribNum = 0
+            attributes = {}
+            default = {}
+            data = []
+            default['title_default'] = '$title'
+            default['line1_default'] = '$episode'
+            default['line2_default'] = '$release'
+            default['line3_default'] = '$rating - $runtime'
+            default['line4_default'] = '$number - $studio'
+            default['icon'] = 'mdi:eye-off'
+            data.append(default)
+            for media in self.data:
+                pre = {}
+                directory = '../local/custom-lovelace/upcoming-media-card/images/plex/'
+                try:
+                    pre['airdate'] = datetime.utcfromtimestamp(
+                    media['addedAt']).isoformat() + 'Z'
+                except: continue
+                try:
+                    """Get number of days between now and air date."""
+                    n=list(map(int, self.now.split("-")))
+                    r=list(map(int, pre['airdate'][:-10].split("-")))
+                    today = date(n[0],n[1],n[2])
+                    airday = date(r[0],r[1],r[2])
+                    daysBetween = (airday-today).days
+                except: continue
+                if daysBetween <= 7: pre['release'] = '$day, $date $time'
+                else: pre['release'] = '$day, $date $time'
+                if 'viewCount' in media: pre['flag'] = False
+                else: pre['flag'] = True
+                if media.get('type') == 'movie':
+                    pre['title'] = media.get('title', '')
+                    pre['episode'] = ''
+                elif media.get('type') == 'episode':
+                    pre['title'] = media.get('grandparentTitle', '')
+                    pre['episode'] = media.get('title', '')
+                    pre['number'] = ('S{:02d}E{:02d}').format(
+                        media.get('parentIndex', ''), media.get('index', ''))
+                else: continue
+                if media.get('duration', 0) > 0:
+                    pre['runtime'] = math.floor(media['duration'] / 60000)
+                if media.get('rating', 0) > 0:
+                    pre['rating'] = '\N{BLACK STAR}' + str(media['rating'])
+                else: pre['rating'] = ''
+                try: pre['poster'] = '{0}p{1}.jpg'.format(directory,media['ratingKey'])
+                except: continue
+                try: pre['fanart'] = '{0}f{1}.jpg'.format(directory,media['ratingKey'])
+                except: pre['fanart'] = ''
                 self.attribNum += 1
-                pre['title'] = show.get('title', '')
-                pre['episode'] = ''
-            elif show.get('type') == 'episode':
-                self.attribNum += 1
-                pre['title'] = show.get('grandparentTitle', '')
-                pre['episode'] = show.get('title', '')
-                pre['number'] = ('S{:02d}E{:02d}').format(
-                    show.get('parentIndex', ''), show.get('index', ''))
-            else: continue
-            if 'viewCount' in show: pre['flag'] = False
-            else: pre['flag'] = True
-            if show.get('rating', 0) > 0:
-                pre['rating'] = '\N{BLACK STAR}' + str(show['rating'])
-            else: pre['rating'] = ''
-            pre['airdate'] = datetime.utcfromtimestamp(
-                show.get('addedAt')).isoformat() + 'Z'
-            if show.get('duration', 0) > 0:
-                pre['runtime'] = math.floor(show['duration'] / 60000)
-            try: pre['poster'] = '{0}p{1}.jpg'.format(directory,show['ratingKey'])
-            except: pre['poster'] = ''
-            try: pre['fanart'] = '{0}f{1}.jpg'.format(directory,show['ratingKey'])
-            except: pre['fanart'] = ''
-            pre['release'] = '$day, $date $time'
-            data.append(pre)
-        self._state = self.attribNum
-        attributes['data'] = json.dumps(data)
-        return attributes
+                data.append(pre)
+            self._state = self.attribNum
+            attributes['data'] = json.dumps(data)
+            return attributes
+            self.refresh = False
 
     def update(self):
         session = requests.Session()
@@ -126,40 +144,42 @@ class PlexRecentlyAddedSensor(Entity):
             self.data = []
             for key in sections:
                 recent = session.get(recently_added.format(
-                    self.ssl, self.host, self.port, key, self.token, self.items),
+                    self.ssl, self.host, self.port, key, self.token, self.max_items * 2),
                     headers={ 'Accept': 'application/json' }, timeout=10)
                 self.data += recent.json()['MediaContainer']['Metadata']
-            self.data = sorted(self.data, key = lambda i: i['addedAt'], reverse=True)
+            self.data = sorted(self.data,
+                key = lambda i: i['addedAt'], reverse=True)[:self.max_items]
     
             if not os.path.exists(directory): os.makedirs(directory)
-            for show in self.data[:self.items]: media_ids.append(show['ratingKey'])
+            for media in self.data: media_ids.append(media['ratingKey'])
     
             """Compare directory contents to media list for missing images"""
             if not set(media_ids).issubset(os.listdir(directory)):
+                self.refresh = True
                 """Delete image if item is no longer in list"""
                 for file in os.listdir(directory):
                     if file.endswith('jpg') and str(media_ids).find(file[1:-4]) == -1: 
                         os.remove(directory + file)
                 """Get resized images from Plex photo/:/transcode"""
-                for show in self.data[:self.items]:
-                    if show.get('type') == 'movie':
-                        poster = urllib.parse.quote_plus(show.get('thumb'))
-                        fanart = urllib.parse.quote_plus(show.get('art'))
-                    elif show.get('type') == 'episode': 
-                        poster = urllib.parse.quote_plus(show.get('grandparentThumb'))
-                        fanart = urllib.parse.quote_plus(show.get('grandparentArt'))
+                for media in self.data:
+                    if media.get('type') == 'movie':
+                        poster = urllib.parse.quote_plus(media.get('thumb'))
+                        fanart = urllib.parse.quote_plus(media.get('art'))
+                    elif media.get('type') == 'episode': 
+                        poster = urllib.parse.quote_plus(media.get('grandparentThumb'))
+                        fanart = urllib.parse.quote_plus(media.get('grandparentArt'))
                     else: continue
-                    if not os.path.isfile(directory + 'f' + show['ratingKey'] + '.jpg'):
+                    if not os.path.isfile(directory + 'f' + media['ratingKey'] + '.jpg'):
                         try:
                             r = session.get(image_url.format(
                                 self.ssl, self.host, self.port, fanart, self.token)).content
-                            open(directory + 'f' + show['ratingKey'] + '.jpg', 'wb').write(r)
+                            open(directory + 'f' + media['ratingKey'] + '.jpg', 'wb').write(r)
                         except: pass
-                    if not os.path.isfile(directory + 'p' + show['ratingKey'] + '.jpg'):
+                    if not os.path.isfile(directory + 'p' + media['ratingKey'] + '.jpg'):
                         try:
                             r = session.get(image_url.format(
                                 self.ssl, self.host, self.port, poster, self.token)).content
-                            open(directory + 'p' + show['ratingKey'] + '.jpg', 'wb').write(r)
+                            open(directory + 'p' + media['ratingKey'] + '.jpg', 'wb').write(r)
                         except: continue
 
 def get_date(zone, offset=0):
