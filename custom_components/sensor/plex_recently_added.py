@@ -7,6 +7,8 @@ https://github.com/custom-components/sensor.plex_recently_added
 https://github.com/custom-cards/upcoming-media-card
 
 """
+import os
+import os.path
 import json
 import logging
 import voluptuous as vol
@@ -39,15 +41,19 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class PlexRecentlyAddedSensor(Entity):
 
     def __init__(self, hass, conf):
+        self._dir = '/custom-lovelace/upcoming-media-card/images/plex/'
+        self.img = '{0}{1}{2}{3}.jpg'.format({}, self._dir, {}, {})
         self.ssl = 's' if conf.get(CONF_SSL) else ''
         self.host = conf.get(CONF_HOST)
         self.port = conf.get(CONF_PORT)
         self.token = conf.get(CONF_TOKEN)
         self.max_items = int(conf.get(CONF_MAX))
-        self._state = None
-        self.item_count = 0
-        self.refresh = False
         self.data = []
+        self.api_json = []
+        self.card_json = []
+        self.media_ids = []
+        self.change_detected = False
+        self._state = None
 
     @property
     def name(self):
@@ -60,89 +66,86 @@ class PlexRecentlyAddedSensor(Entity):
     @property
     def device_state_attributes(self):
         import math
-        if self.refresh:
-            self.item_count = 0
-            attributes = {}
-            default = {}
-            card_json = []
-            default['title_default'] = '$title'
-            default['line1_default'] = '$episode'
-            default['line2_default'] = '$release'
-            default['line3_default'] = '$rating - $runtime'
-            default['line4_default'] = '$number - $studio'
-            default['icon'] = 'mdi:eye-off'
-            card_json.append(default)
-            for plex_media in self.data:
+        attributes = {}
+        if self.change_detected:
+            self.card_json = []
+            defaults = {}
+            """First item in JSON sets card defaults"""
+            defaults['title_default'] = '$title'
+            defaults['line1_default'] = '$episode'
+            defaults['line2_default'] = '$release'
+            defaults['line3_default'] = '$rating - $runtime'
+            defaults['line4_default'] = '$number - $studio'
+            defaults['icon'] = 'mdi:eye-off'
+            self.card_json.append(defaults)
+            """Format Plex API values for card's JSON"""
+            for media in self.data:
                 card_item = {}
-                directory = '../local/custom-lovelace/upcoming-media-card/images/plex/'
-                try:
-                    card_item['airdate'] = datetime.utcfromtimestamp(
-                        plex_media['addedAt']).isoformat() + 'Z'
-                except:
+                if 'addedAt' not in media:
                     continue
-                try:
-                    if get_days_since(plex_media['addedAt']).days <= 7:
-                        card_item['release'] = '$day, $date $time'
-                    else:
-                        card_item['release'] = '$day, $date $time'
-                except:
+                if 'ratingKey' in media:
+                    key = media['ratingKey']
+                else:
+                    continue
+                card_item['airdate'] = datetime.utcfromtimestamp(
+                        media['addedAt']).isoformat() + 'Z'
+                if get_days_since(card_item['airdate']) <= 7:
                     card_item['release'] = '$day, $date $time'
-                if 'viewCount' in plex_media:
+                else:
+                    card_item['release'] = '$day, $date $time'
+                if 'viewCount' in media:
                     card_item['flag'] = False
                 else:
                     card_item['flag'] = True
-                if plex_media.get('type') == 'movie':
-                    card_item['title'] = plex_media.get('title', '')
+                if media['type'] == 'movie':
+                    card_item['title'] = media['title']
                     card_item['episode'] = ''
-                elif plex_media.get('type') == 'episode':
-                    card_item['title'] = plex_media.get('grandparentTitle', '')
-                    card_item['episode'] = plex_media.get('title', '')
+                elif media['type'] == 'episode':
+                    card_item['title'] = media['grandparentTitle']
+                    card_item['episode'] = media['title']
                     card_item['number'] = ('S{:02d}E{:02d}').format(
-                        plex_media.get('parentIndex', ''),
-                        plex_media.get('index', ''))
+                        media['parentIndex'], media['index'])
                 else:
                     continue
-                if plex_media.get('duration', 0) > 0:
+                if media.get('duration', 0) > 0:
                     card_item['runtime'] = math.floor(
-                        plex_media['duration'] / 60000)
-                if plex_media.get('rating', 0) > 0:
+                        media['duration'] / 60000)
+                if 'studio' in media:
+                    card_item['studio'] = media['studio']
+                if 'Genre' in media:
+                    card_item['genres'] = ', '.join(
+                        [genre['tag'] for genre in media['Genre']][:3])
+                if media.get('rating', 0) > 0:
                     card_item['rating'] = ('\N{BLACK STAR} ' +
-                        str(plex_media['rating']))
+                                           str(media['rating']))
                 else:
                     card_item['rating'] = ''
-                try:
-                    card_item['poster'] = '{0}p{1}.jpg'.format(
-                        directory, plex_media['ratingKey'])
-                except:
+                if os.path.isfile(self.img.format('www', 'p', key)):
+                    card_item['poster'] = self.img.format('../local', 'p', key)
+                else:
                     continue
-                try:
-                    card_item['fanart'] = '{0}f{1}.jpg'.format(
-                        directory, plex_media['ratingKey'])
-                except:
+                if os.path.isfile(self.img.format('www', 'f', key)):
+                    card_item['fanart'] = self.img.format('../local', 'f', key)
+                else:
                     card_item['fanart'] = ''
-                self.item_count += 1
-                card_json.append(card_item)
-            self._state = self.item_count
-            self.refresh = False
-            attributes['data'] = json.dumps(card_json)
-            return attributes
+                self.card_json.append(card_item)
+                self.change_detected = False
+        attributes['data'] = json.dumps(self.card_json)
+        return attributes
 
     def update(self):
-        import os
-        import os.path
         import requests
         from urllib.parse import quote
 
         api = requests.Session()
         api.verify = False  # Cert is for Plex's domain not our api server
         headers = {"Accept": "application/json", "X-Plex-Token": self.token}
-        media_ids = []
-        sections = []
-        directory = 'www/custom-lovelace/upcoming-media-card/images/plex/'
-        recently_added = 'http{0}://{1}:{2}/library/sections/{3}/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size={4}'
-        image_url = 'http{0}://{1}:{2}/photo/:/transcode?width=200&height=200&minSize=1&url={3}%3FX-Plex-Token%3D{4}'
         all_libraries = 'http{0}://{1}:{2}/library/sections/all'
+        image_url = 'http{0}://{1}:{2}/photo/:/transcode?width=200&height=200&minSize=1&url={3}%3FX-Plex-Token%3D{4}'
+        recently_added = 'http{0}://{1}:{2}/library/sections/{3}/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size={4}'
 
+        """Find the ID of all libraries in Plex."""
+        sections = []
         try:
             libraries = api.get(
                 all_libraries.format(self.ssl, self.host, self.port),
@@ -151,66 +154,84 @@ class PlexRecentlyAddedSensor(Entity):
                 sections.append(lib_section['key'])
         except OSError:
             _LOGGER.warning("Host %s is not available", self.host)
-            self._state = None
             return
-        
         if libraries.status_code == 200:
-            self.data = []
+            self.api_json = []
+            self._state = 'Online'
+            """Get JSON for each library, combine and sort."""
             for library in sections:
-                recent_media = api.get(
+                sub_sec = api.get(
                     recently_added.format(
                         self.ssl, self.host, self.port,
                         library, self.max_items * 2),
                     headers=headers, timeout=10)
-                self.data += recent_media.json()['MediaContainer']['Metadata']
-            self.data = sorted(self.data, key=lambda i: i['addedAt'],
-                               reverse=True)[:self.max_items]
+                self.api_json += sub_sec.json()['MediaContainer']['Metadata']
+            self.api_json = sorted(self.api_json, key=lambda i: i['addedAt'],
+                                   reverse=True)[:self.max_items]
 
+            directory = 'www' + self._dir
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            for media in self.data:
-                media_ids.append(media['ratingKey'])
-            if not set(media_ids).issubset(os.listdir(directory)):
-                self.refresh = True
-                for file in os.listdir(directory):
-                    if (file.endswith('jpg') and
-                        str(media_ids).find(file) == -1):
-                            os.remove(directory + file)
-                for media in self.data:
-                    if media.get('type') == 'movie':
-                        poster = quote(media.get('thumb'))
-                        fanart = quote(media.get('art'))
-                    elif media.get('type') == 'episode':
-                        poster = quote(media.get('grandparentThumb'))
-                        fanart = quote(media.get('grandparentArt'))
-                    else:
-                        continue
-                    file_name = media['ratingKey'] + '.jpg'
-                    if not os.path.isfile(directory + 'f' + file_name):
-                        try:
-                            image = api.get(image_url.format(
-                                self.ssl, self.host, self.port,
-                                fanart, self.token),
-                                headers=headers, timeout=10).content
-                            open(directory + 'f' + file_name,
-                                'wb').write(image)
-                        except:
-                            pass
-                    if not os.path.isfile(directory + 'p' + file_name):
-                        try:
-                            image = api.get(image_url.format(
-                                self.ssl, self.host,self.port,
-                                poster, self.token),
-                                headers=headers, timeout=10).content
-                            open(directory + 'p' + file_name,
-                                'wb').write(image)
-                        except:
-                            continue
+            """Make list of images in directory to compare to media IDs."""
+            dir_contents = [file[1:-4] for file in os.listdir(directory)]
+
+            """If media ids dont match dir images, update images & sensor."""
+            if (not set(self.media_ids).issubset(dir_contents) or
+                    not set(dir_contents).issubset(self.media_ids)):
+                        self.change_detected = True
+                        self.data = self.api_json
+                        self.media_ids = []
+                        """Create list of new media ID's."""
+                        for media in self.data:
+                            if 'ratingKey' in media:
+                                self.media_ids.append(str(media['ratingKey']))
+                            else:
+                                continue
+                        """Remove images not in media list."""
+                        for file in os.listdir(directory):
+                            if (file.endswith('jpg') and
+                                    str(self.media_ids).find(file) == -1):
+                                        os.remove(directory + file)
+                        """Retrieve images from Plex if not in dir already."""
+                        for media in self.data:
+                            if 'type' not in media:
+                                continue
+                            elif media['type'] == 'movie':
+                                poster = quote(media['thumb'])
+                                fanart = quote(media['art'])
+                            elif media['type'] == 'episode':
+                                poster = quote(media['grandparentThumb'])
+                                fanart = quote(media['grandparentArt'])
+                            poster_jpg = (directory + 'p' +
+                                          media['ratingKey'] + '.jpg')
+                            fanart_jpg = (directory + 'f' +
+                                          media['ratingKey'] + '.jpg')
+                            if not os.path.isfile(fanart_jpg):
+                                try:
+                                    image = api.get(image_url.format(
+                                        self.ssl, self.host, self.port,
+                                        fanart, self.token),
+                                        headers=headers, timeout=10).content
+                                    open(fanart_jpg, 'wb').write(image)
+                                except:
+                                    pass
+                            if not os.path.isfile(poster_jpg):
+                                try:
+                                    image = api.get(image_url.format(
+                                        self.ssl, self.host, self.port,
+                                        poster, self.token),
+                                        headers=headers, timeout=10).content
+                                    open(poster_jpg, 'wb').write(image)
+                                except:
+                                    continue
+        else:
+            self._state = 'Offline'
+
 
 def get_days_since(date):
     import dateutil.parser
     import pytz
-    now = str(datetime.now().replace(tzinfo=pytz.utc))
-    now = dateutil.parser.parse(now)
-    date = dateutil.parser.parse(date)
+    now = datetime.now().replace(tzinfo=pytz.utc)
+    now = dateutil.parser.parse(str(now))
+    date = dateutil.parser.parse(str(date))
     return (now - date).days
