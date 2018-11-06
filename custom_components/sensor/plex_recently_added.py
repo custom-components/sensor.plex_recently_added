@@ -174,56 +174,57 @@ class PlexRecentlyAddedSensor(Entity):
                 os.makedirs(directory)
             """Make list of images in directory to compare to media IDs."""
             dir_contents = [file[1:-4] for file in os.listdir(directory)]
+            dir_contents.sort(key=int)
 
-            """If media ids dont match dir images, update images & sensor."""
-            if (not set(self.media_ids).issubset(dir_contents) or
-                    not set(dir_contents).issubset(self.media_ids)):
-                        self.change_detected = True
-                        self.data = self.api_json
-                        self.media_ids = []
-                        """Create list of new media ID's."""
-                        for media in self.data:
-                            if 'ratingKey' in media:
-                                self.media_ids.append(str(media['ratingKey']))
-                            else:
-                                continue
-                        """Remove images not in media list."""
-                        for file in os.listdir(directory):
-                            if (file.endswith('jpg') and
-                                    str(self.media_ids).find(file) == -1):
-                                        os.remove(directory + file)
-                        """Retrieve images from Plex if not in dir already."""
-                        for media in self.data:
-                            if 'type' not in media:
-                                continue
-                            elif media['type'] == 'movie':
-                                poster = quote(media['thumb'])
-                                fanart = quote(media['art'])
-                            elif media['type'] == 'episode':
-                                poster = quote(media['grandparentThumb'])
-                                fanart = quote(media['grandparentArt'])
-                            poster_jpg = (directory + 'p' +
-                                          media['ratingKey'] + '.jpg')
-                            fanart_jpg = (directory + 'f' +
-                                          media['ratingKey'] + '.jpg')
-                            if not os.path.isfile(fanart_jpg):
-                                try:
-                                    image = api.get(image_url.format(
-                                        self.ssl, self.host, self.port,
-                                        fanart, self.token),
-                                        headers=headers, timeout=10).content
-                                    open(fanart_jpg, 'wb').write(image)
-                                except:
-                                    pass
-                            if not os.path.isfile(poster_jpg):
-                                try:
-                                    image = api.get(image_url.format(
-                                        self.ssl, self.host, self.port,
-                                        poster, self.token),
-                                        headers=headers, timeout=10).content
-                                    open(poster_jpg, 'wb').write(image)
-                                except:
-                                    continue
+            if self.media_ids != dir_contents:
+                self.change_detected = True  # Tell attributes to update too
+                self.data = self.api_json
+                self.media_ids = []
+                """Create list of new media ID's."""
+                for media in self.data:
+                    if 'ratingKey' in media:
+                        self.media_ids.append(str(media['ratingKey']))
+                    else:
+                        continue
+                self.media_ids = self.media_ids * 2  # For posters & fanart
+                self.media_ids.sort(key=int)
+                """Remove images not in media list."""
+                for file in os.listdir(directory):
+                    if (file.endswith('jpg') and
+                            str(self.media_ids).find(file) == -1):
+                                os.remove(directory + file)
+                """Retrieve image from Plex if it doesn't exist"""
+                for media in self.data:
+                    if 'type' not in media:
+                        continue
+                    elif media['type'] == 'movie':
+                        poster = quote(media['thumb'])
+                        fanart = quote(media['art'])
+                    elif media['type'] == 'episode':
+                        poster = quote(media['grandparentThumb'])
+                        fanart = quote(media['grandparentArt'])
+                    poster_jpg = (directory + 'p' +
+                                  media['ratingKey'] + '.jpg')
+                    fanart_jpg = (directory + 'f' +
+                                  media['ratingKey'] + '.jpg')
+                    if not os.path.isfile(fanart_jpg):
+                        try:
+                            image = api.get(image_url.format(
+                                self.ssl, self.host, self.port,
+                                fanart, self.token),
+                                headers=headers, timeout=10).content
+                            open(fanart_jpg, 'wb').write(image)
+                        except:
+                            pass
+                    if not os.path.isfile(poster_jpg):
+                        try:
+                            image = api.get(image_url.format(
+                                self.ssl, self.host, self.port,
+                                poster, self.token),
+                                headers=headers, timeout=10).content
+                            open(poster_jpg, 'wb').write(image)
+                        except:
+                            continue
         else:
             self._state = 'Offline'
 
