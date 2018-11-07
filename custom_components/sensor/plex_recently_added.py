@@ -13,6 +13,7 @@ import json
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from datetime import datetime
+from urllib.parse import quote
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
@@ -147,10 +148,10 @@ class PlexRecentlyAddedSensor(Entity):
                     else:
                         continue
                     card_item['poster'] = self.image_url.format(
-                                self.ssl, self.host, self.port,
+                                '', self.host, self.port,
                                 poster, self.token)
                     card_item['fanart'] = self.image_url.format(
-                                self.ssl, self.host, self.port,
+                                '', self.host, self.port,
                                 fanart, self.token)
                 self.card_json.append(card_item)
                 self.change_detected = False
@@ -161,7 +162,6 @@ class PlexRecentlyAddedSensor(Entity):
         import requests
         import re
         import os
-        from urllib.parse import quote
 
         api = requests.Session()
         api.verify = False  # Cert is for Plex's domain not our api server
@@ -249,7 +249,7 @@ class PlexRecentlyAddedSensor(Entity):
                                 continue
             else:
                 """Update if media items have changed"""
-                if self.media_ids != media_ids(self.data, False):
+                if self.media_ids != media_ids(self.api_json, False):
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, False)
@@ -277,7 +277,7 @@ def media_ids(data, remote):
             ids.append(str(media['ratingKey']))
         else:
             continue
-    if remote:         # Image directory contains 2 files for each item
-        ids = ids * 2  # double ids to compare & update both poster & art imgs
+    if remote:
+        ids = ids * 2  # double ids to compare to dir list of poster & art imgs
     ids.sort(key=int)
     return ids
