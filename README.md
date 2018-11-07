@@ -30,8 +30,8 @@ This component does not require, nor conflict with, the default Plex components.
 | token | | yes | Your Plex token [(Find your Plex token)](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 | host | localhost | no | The host Plex is running on.
 | port | 32400 | no | The port Plex is running on.
-| ssl | false | no | Whether or not to use SSL for Plex.
-| max | 5 | no | Max number of items in sensor.
+| ssl | false | no | Set to true if you use SSL to access Plex.
+| max | 5 | no | Max number of items to show in sensor.
 | remote_images | true | no | If you don't access Home Assistant remotely, setting this to false will turn off downloading of images. More info below.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 
