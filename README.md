@@ -27,11 +27,16 @@ This component does not require, nor conflict with, the default Plex components.
 
 | key | default | required | description
 | --- | --- | --- | ---
-| token | | yes | Your Plex token (See link above on how to obtain)
+| token | | yes | Your Plex token [(Find your Plex token)](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 | host | localhost | no | The host Plex is running on.
 | port | 32400 | no | The port Plex is running on.
 | ssl | false | no | Whether or not to use SSL for Plex.
 | max | 5 | no | Max number of items in sensor.
+| remote_images | true | no | If you don't access Home Assistant remotely, this will turn off downloading of images. More info below.
+
+#### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in upcoming list are downloaded. Images are small in size and are removed automatically when no longer in the upcoming list. This is required to view the images remotely.
+
+#### If you don't access Home Assistant remotely you may set remote_images to false, but you also have to set "Secure connections" to "preferred" in your Plex server's network settings. This is because the SSL certificate supplied by Plex is for their own domain and not for your Plex server.
 
 ### Sample for configuration.yaml:
 
