@@ -32,7 +32,7 @@ This component does not require, nor conflict with, the default Plex components.
 | port | 32400 | no | The port Plex is running on.
 | ssl | false | no | Whether or not to use SSL for Plex.
 | max | 5 | no | Max number of items in sensor.
-| remote_images | true | no | If you don't access Home Assistant remotely, this will turn off downloading of images. More info below.
+| remote_images | true | no | If you don't access Home Assistant remotely, setting this to false will turn off downloading of images. More info below.
 
 #### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in upcoming list are downloaded. Images are small in size and are removed automatically when no longer in the upcoming list. This is required to view the images remotely.
 
