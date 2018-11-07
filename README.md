@@ -36,7 +36,7 @@ This component does not require, nor conflict with, the default Plex components.
 
 #### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in upcoming list are downloaded. Images are small in size and are removed automatically when no longer in the upcoming list. This is required to view the images remotely.
 
-#### If you don't access Home Assistant remotely you may set remote_images to false, but you also have to set "Secure connections" to "preferred" in your Plex server's network settings. This is because the SSL certificate supplied by Plex is for their own domain and not for your Plex server.
+#### If you don't access Home Assistant remotely you may set remote_images to false, but you also have to set "Secure connections" to "preferred" or provide your own certificate in your Plex server's network settings. This is because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server.
 
 ### Sample for configuration.yaml:
 
