@@ -32,12 +32,12 @@ This component does not require, nor conflict with, the default Plex components.
 | port | 32400 | no | The port Plex is running on.
 | ssl | false | no | Set to true if you use SSL to access Plex.
 | max | 5 | no | Max number of items to show in sensor.
-| remote_images | true | no | If you don't access Home Assistant remotely or if the Plex server is "public", setting this to false will turn off downloading of images. More info below.
+| remote_images | true | no | If you don't access Home Assistant remotely, setting this to false will turn off downloading of images. More info below.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 
 #### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in upcoming list are downloaded. Images are small in size and are removed automatically when no longer in the upcoming list. This is required to view the images remotely if your Plex server is on your private network.
 
-#### If you don't access Home Assistant remotely (or if the Plex server is "public") you may set remote_images to false, but you either have to set "Secure connections" to "preferred" in your Plex server's network settings or the plex server must provide it's own certificate. This is because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. If the server provides it's own certificate you only need to set ssl_cert and ssl to true in config.
+#### If you don't access Home Assistant remotely you may set remote_images to false, but you either have to set "Secure connections" to "preferred" in your Plex server's network settings or the plex server must provide it's own certificate. This is because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. If the server provides it's own certificate you only need to set ssl_cert and ssl to true in config.
 
 ### Sample for configuration.yaml:
 
