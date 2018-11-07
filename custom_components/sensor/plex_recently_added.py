@@ -7,10 +7,9 @@ https://github.com/custom-components/sensor.plex_recently_added
 https://github.com/custom-cards/upcoming-media-card
 
 """
-import os
 import os.path
-import json
 import logging
+import json
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from datetime import datetime
@@ -23,6 +22,7 @@ __version__ = '0.0.9'
 _LOGGER = logging.getLogger(__name__)
 
 CONF_TOKEN = 'token'
+CONF_REMOTE = 'remote_images'
 CONF_MAX = 'max'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
@@ -31,6 +31,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PORT, default=32400): cv.port,
     vol.Required(CONF_TOKEN): cv.string,
     vol.Optional(CONF_MAX, default=5): cv.string,
+    vol.Optional(CONF_REMOTE, default=True): cv.boolean,
 })
 
 
@@ -41,19 +42,23 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class PlexRecentlyAddedSensor(Entity):
 
     def __init__(self, hass, conf):
+        from pytz import timezone
+        self.image_url = 'http{0}://{1}:{2}/photo/:/transcode?width=200&height=200&minSize=1&url={3}%3FX-Plex-Token%3D{4}&X-Plex-Token={4}'
         self._dir = '/custom-lovelace/upcoming-media-card/images/plex/'
         self.img = '{0}{1}{2}{3}.jpg'.format({}, self._dir, {}, {})
+        self._tz = timezone(str(hass.config.time_zone))
         self.ssl = 's' if conf.get(CONF_SSL) else ''
         self.host = conf.get(CONF_HOST)
         self.port = conf.get(CONF_PORT)
         self.token = conf.get(CONF_TOKEN)
         self.max_items = int(conf.get(CONF_MAX))
-        self.data = []
-        self.api_json = []
-        self.card_json = []
-        self.media_ids = []
+        self.remote_images = conf.get(CONF_REMOTE)
         self.change_detected = False
         self._state = None
+        self.card_json = []
+        self.media_ids = []
+        self.api_json = []
+        self.data = []
 
     @property
     def name(self):
@@ -70,7 +75,7 @@ class PlexRecentlyAddedSensor(Entity):
         if self.change_detected:
             self.card_json = []
             defaults = {}
-            """First item in JSON sets card defaults"""
+            """First object in JSON sets card defaults"""
             defaults['title_default'] = '$title'
             defaults['line1_default'] = '$episode'
             defaults['line2_default'] = '$release'
@@ -81,15 +86,16 @@ class PlexRecentlyAddedSensor(Entity):
             """Format Plex API values for card's JSON"""
             for media in self.data:
                 card_item = {}
-                if 'addedAt' not in media:
-                    continue
                 if 'ratingKey' in media:
                     key = media['ratingKey']
                 else:
                     continue
-                card_item['airdate'] = datetime.utcfromtimestamp(
-                        media['addedAt']).isoformat() + 'Z'
-                if get_days_since(card_item['airdate']) <= 7:
+                if 'addedAt' in media:
+                    card_item['airdate'] = datetime.utcfromtimestamp(
+                            media['addedAt']).isoformat() + 'Z'
+                else:
+                    continue
+                if days_since(card_item['airdate'], self._tz) <= 7:
                     card_item['release'] = '$day, $date $time'
                 else:
                     card_item['release'] = '$day, $date $time'
@@ -120,14 +126,32 @@ class PlexRecentlyAddedSensor(Entity):
                                            str(media['rating']))
                 else:
                     card_item['rating'] = ''
-                if os.path.isfile(self.img.format('www', 'p', key)):
-                    card_item['poster'] = self.img.format('../local', 'p', key)
+                if self.remote_images:
+                    if os.path.isfile(self.img.format('www', 'p', key)):
+                        card_item['poster'] = self.img.format('../local',
+                                                              'p', key)
+                    else:
+                        continue
+                    if os.path.isfile(self.img.format('www', 'f', key)):
+                        card_item['fanart'] = self.img.format('../local',
+                                                              'f', key)
+                    else:
+                        card_item['fanart'] = ''
                 else:
-                    continue
-                if os.path.isfile(self.img.format('www', 'f', key)):
-                    card_item['fanart'] = self.img.format('../local', 'f', key)
-                else:
-                    card_item['fanart'] = ''
+                    if media['type'] == 'movie':
+                        poster = quote(media['thumb'])
+                        fanart = quote(media['art'])
+                    elif media['type'] == 'episode':
+                        poster = quote(media['grandparentThumb'])
+                        fanart = quote(media['grandparentArt'])
+                    else:
+                        continue
+                    card_item['poster'] = self.image_url.format(
+                                self.ssl, self.host, self.port,
+                                poster, self.token)
+                    card_item['fanart'] = self.image_url.format(
+                                self.ssl, self.host, self.port,
+                                fanart, self.token)
                 self.card_json.append(card_item)
                 self.change_detected = False
         attributes['data'] = json.dumps(self.card_json)
@@ -135,13 +159,14 @@ class PlexRecentlyAddedSensor(Entity):
 
     def update(self):
         import requests
+        import re
+        import os
         from urllib.parse import quote
 
         api = requests.Session()
         api.verify = False  # Cert is for Plex's domain not our api server
         headers = {"Accept": "application/json", "X-Plex-Token": self.token}
         all_libraries = 'http{0}://{1}:{2}/library/sections/all'
-        image_url = 'http{0}://{1}:{2}/photo/:/transcode?width=200&height=200&minSize=1&url={3}%3FX-Plex-Token%3D{4}'
         recently_added = 'http{0}://{1}:{2}/library/sections/{3}/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size={4}'
 
         """Find the ID of all libraries in Plex."""
@@ -169,70 +194,90 @@ class PlexRecentlyAddedSensor(Entity):
             self.api_json = sorted(self.api_json, key=lambda i: i['addedAt'],
                                    reverse=True)[:self.max_items]
 
-            directory = 'www' + self._dir
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            """Make list of images in directory to compare to media IDs."""
-            dir_contents = [file[1:-4] for file in os.listdir(directory)]
-            dir_contents.sort(key=int)
+            if self.remote_images:
+                directory = 'www' + self._dir
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
 
-            if self.media_ids != dir_contents:
-                self.change_detected = True  # Tell attributes to update too
-                self.data = self.api_json
-                self.media_ids = []
-                """Create list of new media ID's."""
-                for media in self.data:
-                    if 'ratingKey' in media:
-                        self.media_ids.append(str(media['ratingKey']))
-                    else:
-                        continue
-                self.media_ids = self.media_ids * 2  # For posters & fanart
-                self.media_ids.sort(key=int)
-                """Remove images not in media list."""
-                for file in os.listdir(directory):
-                    if (file.endswith('jpg') and
-                            str(self.media_ids).find(file) == -1):
-                                os.remove(directory + file)
-                """Retrieve image from Plex if it doesn't exist"""
-                for media in self.data:
-                    if 'type' not in media:
-                        continue
-                    elif media['type'] == 'movie':
-                        poster = quote(media['thumb'])
-                        fanart = quote(media['art'])
-                    elif media['type'] == 'episode':
-                        poster = quote(media['grandparentThumb'])
-                        fanart = quote(media['grandparentArt'])
-                    poster_jpg = (directory + 'p' +
-                                  media['ratingKey'] + '.jpg')
-                    fanart_jpg = (directory + 'f' +
-                                  media['ratingKey'] + '.jpg')
-                    if not os.path.isfile(fanart_jpg):
-                        try:
-                            image = api.get(image_url.format(
-                                self.ssl, self.host, self.port,
-                                fanart, self.token),
-                                headers=headers, timeout=10).content
-                            open(fanart_jpg, 'wb').write(image)
-                        except:
-                            pass
-                    if not os.path.isfile(poster_jpg):
-                        try:
-                            image = api.get(image_url.format(
-                                self.ssl, self.host, self.port,
-                                poster, self.token),
-                                headers=headers, timeout=10).content
-                            open(poster_jpg, 'wb').write(image)
-                        except:
+                """Make list of images in dir that use our naming scheme"""
+                dir_re = re.compile(r'[pf]\d+\.jpg')  # p1234.jpg or f1234.jpg
+                dir_images = list(filter(dir_re.search,
+                                         os.listdir(directory)))
+                dir_ids = [file[1:-4] for file in dir_images]
+                dir_ids.sort(key=int)
+
+                """Update if media items have changed or images are missing"""
+                if dir_ids != self.media_ids:
+                    self.change_detected = True  # Tell attributes to update
+                    self.data = self.api_json
+                    self.media_ids = media_ids(self.data, True)
+                    """Remove images not in media list."""
+                    for file in dir_images:
+                        if str(self.media_ids).find(file) == -1:
+                            os.remove(directory + file)
+                    """Retrieve image from Plex if it doesn't exist"""
+                    for media in self.data:
+                        if 'type' not in media:
                             continue
+                        elif media['type'] == 'movie':
+                            poster = quote(media['thumb'])
+                            fanart = quote(media['art'])
+                        elif media['type'] == 'episode':
+                            poster = quote(media['grandparentThumb'])
+                            fanart = quote(media['grandparentArt'])
+                        poster_jpg = (directory + 'p' +
+                                      media['ratingKey'] + '.jpg')
+                        fanart_jpg = (directory + 'f' +
+                                      media['ratingKey'] + '.jpg')
+                        if not os.path.isfile(fanart_jpg):
+                            try:
+                                image = api.get(self.image_url.format(
+                                    self.ssl, self.host, self.port,
+                                    fanart, self.token),
+                                    headers=headers, timeout=10).content
+                                open(fanart_jpg, 'wb').write(image)
+                            except:
+                                pass
+                        if not os.path.isfile(poster_jpg):
+                            try:
+                                image = api.get(self.image_url.format(
+                                    self.ssl, self.host, self.port,
+                                    poster, self.token),
+                                    headers=headers, timeout=10).content
+                                open(poster_jpg, 'wb').write(image)
+                            except:
+                                continue
+            else:
+                """Update if media items have changed"""
+                if self.media_ids != media_ids(self.data, False):
+                    self.change_detected = True  # Tell attributes to update
+                    self.data = self.api_json
+                    self.media_ids = media_ids(self.data, False)
         else:
             self._state = 'Offline'
 
 
-def get_days_since(date):
-    import dateutil.parser
-    import pytz
-    now = datetime.now().replace(tzinfo=pytz.utc)
-    now = dateutil.parser.parse(str(now))
-    date = dateutil.parser.parse(str(date))
-    return (now - date).days
+def days_since(date, tz):
+    import time
+    from pytz import utc
+    date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ')
+    date = str(date.replace(tzinfo=utc).astimezone(tz))[:10]
+    date = time.strptime(date, '%Y-%m-%d')
+    date = time.mktime(date)
+    now = datetime.now().strftime('%Y-%m-%d')
+    now = time.strptime(now, '%Y-%m-%d')
+    now = time.mktime(now)
+    return int((now - date) / 86400)
+
+
+def media_ids(data, remote):
+    ids = []
+    for media in data:
+        if 'ratingKey' in media:
+            ids.append(str(media['ratingKey']))
+        else:
+            continue
+    if remote:         # Image directory contains 2 files for each item
+        ids = ids * 2  # double ids to compare & update both poster & art imgs
+    ids.sort(key=int)
+    return ids
