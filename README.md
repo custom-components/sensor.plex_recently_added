@@ -53,6 +53,7 @@ This component does not require, nor conflict with, the default Plex components.
 
     - type: custom:upcoming-media-card
       entity: sensor.plex_recently_added
+      title: Recently Downloaded
 
 
 ### Card Content Defaults
