@@ -7,34 +7,34 @@ https://github.com/custom-components/sensor.plex_recently_added
 https://github.com/custom-cards/upcoming-media-card
 
 """
-import json
 import os.path
 import logging
+import json
+import requests
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from datetime import datetime
-from urllib.parse import quote
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
+from homeassistant.const import CONF_SSL
 from homeassistant.helpers.entity import Entity
 
 __version__ = '0.0.9'
 
 _LOGGER = logging.getLogger(__name__)
 
-CONF_TOKEN = 'token'
+CONF_DL_IMAGES = 'download_images'
+CONF_SERVER = 'server_name'
 CONF_SSL_CERT = 'ssl_cert'
-CONF_REMOTE = 'remote_images'
+CONF_TOKEN = 'token'
 CONF_MAX = 'max'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SSL, default=False): cv.boolean,
-    vol.Optional(CONF_HOST, default='localhost'): cv.string,
-    vol.Optional(CONF_PORT, default=32400): cv.port,
+    vol.Optional(CONF_SSL_CERT, default=False): cv.boolean,
     vol.Required(CONF_TOKEN): cv.string,
     vol.Optional(CONF_MAX, default=5): cv.string,
-    vol.Optional(CONF_REMOTE, default=True): cv.boolean,
-    vol.Optional(CONF_SSL_CERT, default=False): cv.boolean,
+    vol.Required(CONF_SERVER): cv.string,
+    vol.Optional(CONF_DL_IMAGES, default=True): cv.boolean,
 })
 
 
@@ -46,21 +46,23 @@ class PlexRecentlyAddedSensor(Entity):
 
     def __init__(self, hass, conf):
         from pytz import timezone
-        self.image_url = 'http{0}://{1}:{2}/photo/:/transcode?width=200&height=200&minSize=1&url={3}%3FX-Plex-Token%3D{4}&X-Plex-Token={4}'
         self._dir = '/custom-lovelace/upcoming-media-card/images/plex/'
         self.img = '{0}{1}{2}{3}.jpg'.format({}, self._dir, {}, {})
         self._tz = timezone(str(hass.config.time_zone))
-        self.ssl = 's' if conf.get(CONF_SSL) else ''
-        self.host = conf.get(CONF_HOST)
-        self.port = conf.get(CONF_PORT)
+        self.cert = conf.get(CONF_SSL_CERT)
+        self.ssl = 's' if conf.get(CONF_SSL) or self.cert else ''
         self.token = conf.get(CONF_TOKEN)
+        self.server_name = conf.get(CONF_SERVER)
         self.max_items = int(conf.get(CONF_MAX))
-        self.certificate = conf.get(CONF_REMOTE)
-        self.remote_images = conf.get(CONF_REMOTE)
+        self.server_ip, self.local_ip, self.port = get_server_ip(
+            self.server_name, self.token)
+        self.url_elements = [self.ssl, self.server_ip, self.local_ip,
+                             self.port, self.token]
+        self.dl_images = conf.get(CONF_DL_IMAGES)
         self.change_detected = False
         self._state = None
         self.card_json = []
-        self.media_ids = []
+        self.media_ids = [1]
         self.api_json = []
         self.data = []
 
@@ -83,8 +85,8 @@ class PlexRecentlyAddedSensor(Entity):
             defaults['title_default'] = '$title'
             defaults['line1_default'] = '$episode'
             defaults['line2_default'] = '$release'
-            defaults['line3_default'] = '$rating - $runtime'
-            defaults['line4_default'] = '$number - $studio'
+            defaults['line3_default'] = '$number - $rating - $runtime'
+            defaults['line4_default'] = '$genres'
             defaults['icon'] = 'mdi:eye-off'
             self.card_json.append(defaults)
             """Format Plex API values for card's JSON"""
@@ -130,7 +132,15 @@ class PlexRecentlyAddedSensor(Entity):
                                            str(media['rating']))
                 else:
                     card_item['rating'] = ''
-                if self.remote_images:
+                if media['type'] == 'movie':
+                    poster = media['thumb']
+                    fanart = media['art']
+                elif media['type'] == 'episode':
+                    poster = media['grandparentThumb']
+                    fanart = media['grandparentArt']
+                else:
+                    continue
+                if self.dl_images:
                     if os.path.isfile(self.img.format('www', 'p', key)):
                         card_item['poster'] = self.img.format('../local',
                                                               'p', key)
@@ -142,63 +152,50 @@ class PlexRecentlyAddedSensor(Entity):
                     else:
                         card_item['fanart'] = ''
                 else:
-                    if media['type'] == 'movie':
-                        poster = quote(media['thumb'])
-                        fanart = quote(media['art'])
-                    elif media['type'] == 'episode':
-                        poster = quote(media['grandparentThumb'])
-                        fanart = quote(media['grandparentArt'])
-                    else:
-                        continue
-                    cert = self.ssl if self.certificate else ''
-                    card_item['poster'] = self.image_url.format(
-                                cert, self.host, self.port,
-                                poster, self.token)
-                    card_item['fanart'] = self.image_url.format(
-                                cert, self.host, self.port,
-                                fanart, self.token)
+                    card_item['poster'] = image_url(self.url_elements,
+                                                    False, poster)
+                    card_item['fanart'] = image_url(self.url_elements,
+                                                    False, fanart)
                 self.card_json.append(card_item)
                 self.change_detected = False
         attributes['data'] = json.dumps(self.card_json)
         return attributes
 
     def update(self):
-        import requests
         import re
         import os
         plex = requests.Session()
-        """Default certificate is for Plex's domain not our api server"""
-        plex.verify = self.ssl if self.certificate else False
+        plex.verify = False  # Cert is for Plex's domain not our api server
         headers = {"Accept": "application/json", "X-Plex-Token": self.token}
-        all_libraries = 'http{0}://{1}:{2}/library/sections/all'
-        recently_added = 'http{0}://{1}:{2}/library/sections/{3}/recentlyAdded?X-Plex-Container-Start=0&X-Plex-Container-Size={4}'
+        url_base = 'http{0}://{1}:{2}/library/sections'.format(self.ssl,
+                                                               self.server_ip,
+                                                               self.port)
+        all_libraries = url_base + '/all'
+        recently_added = (url_base + '/{0}/recentlyAdded?X-Plex-Container-'
+                                     'Start=0&X-Plex-Container-Size={1}')
 
         """Find the ID of all libraries in Plex."""
         sections = []
         try:
-            libraries = plex.get(
-                all_libraries.format(self.ssl, self.host, self.port),
-                headers=headers, timeout=10)
+            libraries = plex.get(all_libraries, headers=headers, timeout=10)
             for lib_section in libraries.json()['MediaContainer']['Directory']:
                 sections.append(lib_section['key'])
         except OSError:
-            _LOGGER.warning("Host %s is not available", self.host)
+            _LOGGER.warning("Host %s is not available", self.server_ip)
+            self._state = 'Offline'
             return
         if libraries.status_code == 200:
             self.api_json = []
             self._state = 'Online'
             """Get JSON for each library, combine and sort."""
             for library in sections:
-                sub_sec = plex.get(
-                    recently_added.format(
-                        self.ssl, self.host, self.port,
-                        library, self.max_items * 2),
-                    headers=headers, timeout=10)
+                sub_sec = plex.get(recently_added.format(
+                    library, self.max_items * 2), headers=headers, timeout=10)
                 self.api_json += sub_sec.json()['MediaContainer']['Metadata']
             self.api_json = sorted(self.api_json, key=lambda i: i['addedAt'],
                                    reverse=True)[:self.max_items]
 
-            if self.remote_images:
+            if self.dl_images:
                 directory = 'www' + self._dir
                 if not os.path.exists(directory):
                     os.makedirs(directory)
@@ -224,29 +221,27 @@ class PlexRecentlyAddedSensor(Entity):
                         if 'type' not in media:
                             continue
                         elif media['type'] == 'movie':
-                            poster = quote(media['thumb'])
-                            fanart = quote(media['art'])
+                            poster = media['thumb']
+                            fanart = media['art']
                         elif media['type'] == 'episode':
-                            poster = quote(media['grandparentThumb'])
-                            fanart = quote(media['grandparentArt'])
+                            poster = media['grandparentThumb']
+                            fanart = media['grandparentArt']
                         poster_jpg = (directory + 'p' +
                                       media['ratingKey'] + '.jpg')
                         fanart_jpg = (directory + 'f' +
                                       media['ratingKey'] + '.jpg')
                         if not os.path.isfile(fanart_jpg):
                             try:
-                                image = plex.get(self.image_url.format(
-                                    self.ssl, self.host, self.port,
-                                    fanart, self.token),
+                                image = plex.get(image_url(
+                                    self.url_elements, True, fanart),
                                     headers=headers, timeout=10).content
                                 open(fanart_jpg, 'wb').write(image)
                             except:
                                 pass
                         if not os.path.isfile(poster_jpg):
                             try:
-                                image = plex.get(self.image_url.format(
-                                    self.ssl, self.host, self.port,
-                                    poster, self.token),
+                                image = plex.get(image_url(
+                                    self.url_elements, True, fanart),
                                     headers=headers, timeout=10).content
                                 open(poster_jpg, 'wb').write(image)
                             except:
@@ -259,6 +254,33 @@ class PlexRecentlyAddedSensor(Entity):
                     self.media_ids = media_ids(self.data, False)
         else:
             self._state = 'Offline'
+
+
+def image_url(url_elements, cert, img):
+    """Plex can resize images with a long & partially % encoded url."""
+    ssl, host, local, port, token = url_elements
+    if not cert and not self.certificate:
+        ssl = ''
+    from urllib.parse import quote
+    encoded = quote('http{0}://{1}:{2}{3}'.format(ssl, local,
+                                                  port, img), safe='')
+        return ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
+                '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
+                                                              encoded, token)
+
+
+def get_server_ip(name, token):
+    import xml.etree.ElementTree as ET
+    from unicodedata import normalize
+    plex_tv = requests.get(
+        'https://plex.tv/api/servers.xml?X-Plex-Token=' + token, timeout=10)
+    plex_xml = ET.fromstring(plex_tv.content)
+    for server in plex_xml.findall('Server'):
+        server_name = server.get('name').casefold()
+        name = name.casefold()
+        if normalize('NFKD', server_name) == normalize('NFKD', name):
+            return (server.get('address'), server.get('localAddresses'),
+                    server.get('port'))
 
 
 def days_since(date, tz):
@@ -281,7 +303,7 @@ def media_ids(data, remote):
             ids.append(str(media['ratingKey']))
         else:
             continue
-    if remote:
-        ids = ids * 2  # Double ids to compare to dir list of poster & art imgs
+    if remote:         # Image directory contains 2 files for each item
+        ids = ids * 2  # double ids to compare & update both poster & art imgs
     ids.sort(key=int)
     return ids
