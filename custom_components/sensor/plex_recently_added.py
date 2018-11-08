@@ -13,7 +13,6 @@ import json
 import requests
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from datetime import datetime
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_SSL
 from homeassistant.helpers.entity import Entity
@@ -97,8 +96,7 @@ class PlexRecentlyAddedSensor(Entity):
                 else:
                     continue
                 if 'addedAt' in media:
-                    card_item['airdate'] = datetime.utcfromtimestamp(
-                            media['addedAt']).isoformat() + 'Z'
+                    card_item['airdate'] = media['addedAt']
                 else:
                     continue
                 if days_since(card_item['airdate'], self._tz) <= 7:
@@ -258,18 +256,19 @@ class PlexRecentlyAddedSensor(Entity):
 
 def image_url(url_elements, cert, img):
     """Plex can resize images with a long & partially % encoded url."""
+    from urllib.parse import quote
     ssl, host, local, port, token = url_elements
     if not cert and not self.certificate:
         ssl = ''
-    from urllib.parse import quote
     encoded = quote('http{0}://{1}:{2}{3}'.format(ssl, local,
                                                   port, img), safe='')
-        return ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
-                '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
-                                                              encoded, token)
+    return ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
+            '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
+                                                          encoded, token)
 
 
 def get_server_ip(name, token):
+    """With a token and server name we get server's ip, local ip, and port"""
     import xml.etree.ElementTree as ET
     from unicodedata import normalize
     plex_tv = requests.get(
@@ -286,6 +285,8 @@ def get_server_ip(name, token):
 def days_since(date, tz):
     import time
     from pytz import utc
+    from datetime import datetime
+    date = datetime.utcfromtimestamp(date).isoformat() + 'Z'
     date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ')
     date = str(date.replace(tzinfo=utc).astimezone(tz))[:10]
     date = time.strptime(date, '%Y-%m-%d')
