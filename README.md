@@ -28,26 +28,27 @@ This component does not require, nor conflict with, the default Plex components.
 | key | default | required | description
 | --- | --- | --- | ---
 | token | | yes | Your Plex token [(Find your Plex token)](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
-| host | localhost | no | The host Plex is running on (local IP address or localhost).
-| port | 32400 | no | The port Plex is running on.
+| server_name |  | yes | The name of your Plex server. Can be found in Plex's server settings in "General".
 | ssl | false | no | Set to true if you use SSL to access Plex.
 | max | 5 | no | Max number of items to show in sensor.
-| remote_images | true | no | If you don't access Home Assistant remotely, setting this to false will turn off downloading of images. More info below.
+| download_images | true | no | Setting this to false will turn off downloading of images, but will require certain Plex settings to work seen below.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 
-#### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in upcoming list are downloaded. Images are small in size and are removed automatically when no longer in the upcoming list. This is required to view the images remotely.
+#### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in the upcoming list are downloaded. Images are small in size and are removed automatically when no longer needed.
 
-#### If you don't access Home Assistant remotely you may set remote_images to false, but you either have to set "Secure connections" to "preferred" or have a custom certificate set, both options are found in your Plex server's network settings. This is needed because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. If your Plex server provides it's own certificate you only need to set ssl_cert to true in config.
+#### If you prefer to not download the images you may set download_images to false, but you either have to set "Secure connections" to "preferred" or have a custom certificate set (both options are found in your Plex server's network settings). This is needed because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. If your Plex server provides it's own certificate you only need to set ssl_cert to true and download_images to false.
 
+**Do not just copy examples, please use config options above to build your own!**
 ### Sample for configuration.yaml:
 
     sensor:
     - platform: plex_recently_added
       token: YOUR_PLEX_TOKEN
-      host: 192.168.1.4
-      port: 32400
+      server_name: PLEX_SERVER_NAME
       ssl: true
-      max: 10
+      ssl_cert: false
+      download_images: false
+      max: 5
 
 ### Sample for ui-lovelace.yaml:
 
@@ -59,10 +60,10 @@ This component does not require, nor conflict with, the default Plex components.
 
 | key | default | example |
 | --- | --- | --- |
-| title | $title | "Night of the Living Dead" |
-| line1 | $release | "In Theaters Mon, 10/31" if it's a theater release and more than a week away or "Available Monday" if it's a physical release and within a week.|
-| line2 | $genres | "Action, Adventure, Comedy" |
-| line3 | $rating - $runtime | "★ 9.8 - 01:30"
-| line4 | $studio | "Laurel Group Inc."
-| icon | mdi:arrow-down-bold | https://materialdesignicons.com/icon/arrow-down-bold
+| title | $title | "The Walking Dead" |
+| line1 | $episode | "What Comes After" |
+| line2 | $day, $date $time | "Monday, 10/31 10:00 PM" Displays time of download.|
+| line3 | $number - $rating - $runtime | "S01E12 - ★ 9.8 - 01:30"
+| line4 | $genres | "Action, Adventure, Comedy" |
+| icon | mdi:eye-off | https://materialdesignicons.com/icon/eye-off
 
