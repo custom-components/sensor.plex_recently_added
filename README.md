@@ -16,7 +16,6 @@ This component does not require, nor conflict with, the default Plex components.
 </br>
 
 ## Installation:
-### In it's current state, this component only works if Home Assistant and your Plex server are on the same network.
 1. Install this component by copying to your `/custom_components/sensor/` folder.
 2. Install the card: [Upcoming Media Card](https://github.com/custom-cards/upcoming-media-card)
 3. Add the code to your `configuration.yaml` using the config options below.
