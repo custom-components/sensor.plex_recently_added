@@ -56,7 +56,7 @@ class PlexRecentlyAddedSensor(Entity):
         self.server_ip, self.local_ip, self.port = get_server_ip(
             self.server_name, self.token)
         self.url_elements = [self.ssl, self.server_ip, self.local_ip,
-                             self.port, self.token]
+                             self.port, self.token, self.cert]
         self.dl_images = conf.get(CONF_DL_IMAGES)
         self.change_detected = False
         self._state = None
@@ -163,7 +163,9 @@ class PlexRecentlyAddedSensor(Entity):
         import re
         import os
         plex = requests.Session()
-        plex.verify = False  # Cert is for Plex's domain not our api server
+        if not self.cert:
+            """Default SSL certificate is for plex.tv not our api server"""
+            plex.verify = False
         headers = {"Accept": "application/json", "X-Plex-Token": self.token}
         url_base = 'http{0}://{1}:{2}/library/sections'.format(self.ssl,
                                                                self.server_ip,
@@ -180,7 +182,7 @@ class PlexRecentlyAddedSensor(Entity):
                 sections.append(lib_section['key'])
         except OSError:
             _LOGGER.warning("Host %s is not available", self.server_ip)
-            self._state = 'Offline'
+            self._state = '%s cannot be reached' % self.server_ip
             return
         if libraries.status_code == 200:
             self.api_json = []
@@ -206,13 +208,13 @@ class PlexRecentlyAddedSensor(Entity):
                 dir_ids.sort(key=int)
 
                 """Update if media items have changed or images are missing"""
-                if dir_ids != self.media_ids:
+                if dir_ids != self.media_ids or self.api_json != self.data:
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, True)
-                    """Remove images not in media list."""
+                    """Remove images not in list"""
                     for file in dir_images:
-                        if str(self.media_ids).find(file) == -1:
+                        if not any(str(ids) in file for ids in self.media_ids):
                             os.remove(directory + file)
                     """Retrieve image from Plex if it doesn't exist"""
                     for media in self.data:
@@ -224,47 +226,56 @@ class PlexRecentlyAddedSensor(Entity):
                         elif media['type'] == 'episode':
                             poster = media['grandparentThumb']
                             fanart = media['grandparentArt']
-                        poster_jpg = (directory + 'p' +
-                                      media['ratingKey'] + '.jpg')
-                        fanart_jpg = (directory + 'f' +
-                                      media['ratingKey'] + '.jpg')
+                        poster_jpg = '{}p{}.jpg'.format(directory,
+                                                        media['ratingKey'])
+                        fanart_jpg = '{}f{}.jpg'.format(directory,
+                                                        media['ratingKey'])
                         if not os.path.isfile(fanart_jpg):
-                            try:
+                            if image_url(self.url_elements, True, fanart):
                                 image = plex.get(image_url(
                                     self.url_elements, True, fanart),
                                     headers=headers, timeout=10).content
                                 open(fanart_jpg, 'wb').write(image)
-                            except:
+                            else:
                                 pass
                         if not os.path.isfile(poster_jpg):
-                            try:
+                            if image_url(self.url_elements, True, fanart):
                                 image = plex.get(image_url(
                                     self.url_elements, True, fanart),
                                     headers=headers, timeout=10).content
                                 open(poster_jpg, 'wb').write(image)
-                            except:
+                            else:
                                 continue
             else:
                 """Update if media items have changed"""
-                if self.media_ids != media_ids(self.api_json, False):
+                if self.api_json != self.data:
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, False)
         else:
-            self._state = 'Offline'
+            self._state = '%s cannot be reached' % self.server_ip
 
 
-def image_url(url_elements, cert, img):
+def image_url(url_elements, cert_check, img):
     """Plex can resize images with a long & partially % encoded url."""
     from urllib.parse import quote
-    ssl, host, local, port, token = url_elements
-    if not cert and not self.certificate:
+    ssl, host, local, port, token, self_cert = url_elements
+    if not cert_check and not self_cert:
         ssl = ''
     encoded = quote('http{0}://{1}:{2}{3}'.format(ssl, local,
                                                   port, img), safe='')
-    return ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
-            '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
+    url = ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
+           '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
                                                           encoded, token)
+    """Check if image exists"""
+    if not self_cert:
+        r = requests.head(url, verify=False)
+    else:
+        r = requests.head(url)
+    if r.status_code == 200:
+        return url
+    else:
+        return False
 
 
 def get_server_ip(name, token):
@@ -304,7 +315,8 @@ def media_ids(data, remote):
             ids.append(str(media['ratingKey']))
         else:
             continue
-    if remote:         # Image directory contains 2 files for each item
-        ids = ids * 2  # double ids to compare & update both poster & art imgs
+    """Double ids to compare to dir contents (poster & fanart jpgs)"""
+    if remote:
+        ids = ids * 2
     ids.sort(key=int)
     return ids
