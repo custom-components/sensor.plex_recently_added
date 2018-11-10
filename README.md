@@ -38,7 +38,7 @@ This component does not require, nor conflict with, the default Plex components.
 #### If you prefer to not download the images you may set download_images to false, but you either have to set "Secure connections" to "preferred" or have a custom certificate set (both options are found in your Plex server's network settings). This is needed because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. If your Plex server provides it's own certificate you only need to set ssl_cert to true and download_images to false. 
 
 #### The "download_images: false" option will only work if either your Plex server is "fully accessible outside your network" (seen in server settings under "Remote Access") or if you do not access home assistant remotely.
-
+</br></br>
 **Do not just copy examples, please use config options above to build your own!**
 ### Sample for configuration.yaml:
 
