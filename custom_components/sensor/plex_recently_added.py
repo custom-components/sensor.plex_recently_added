@@ -1,6 +1,6 @@
 """
 Home Assistant component to feed the Upcoming Media Lovelace card with
-recently added media from Plex.
+Plex's recently added media.
 
 https://github.com/custom-components/sensor.plex_recently_added
 
@@ -262,11 +262,13 @@ def image_url(url_elements, cert_check, img):
     ssl, host, local, port, token, self_cert = url_elements
     if not cert_check and not self_cert:
         ssl = ''
+    if self.dl_images:
+        host = local
     encoded = quote('http{0}://{1}:{2}{3}'.format(ssl, local,
                                                   port, img), safe='')
     url = ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
            '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
-                                                          encoded, token)
+                                                         encoded, token)
     """Check if image exists"""
     if not self_cert:
         r = requests.head(url, verify=False)
