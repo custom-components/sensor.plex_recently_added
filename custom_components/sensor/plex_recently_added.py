@@ -53,11 +53,11 @@ class PlexRecentlyAddedSensor(Entity):
         self.token = conf.get(CONF_TOKEN)
         self.server_name = conf.get(CONF_SERVER)
         self.max_items = int(conf.get(CONF_MAX))
+        self.dl_images = conf.get(CONF_DL_IMAGES)
         self.server_ip, self.local_ip, self.port = get_server_ip(
             self.server_name, self.token)
         self.url_elements = [self.ssl, self.server_ip, self.local_ip,
-                             self.port, self.token, self.cert]
-        self.dl_images = conf.get(CONF_DL_IMAGES)
+                             self.port, self.token, self.cert, self.dl_images]
         self.change_detected = False
         self._state = None
         self.card_json = []
@@ -208,7 +208,8 @@ class PlexRecentlyAddedSensor(Entity):
                 dir_ids.sort(key=int)
 
                 """Update if media items have changed or images are missing"""
-                if dir_ids != self.media_ids or self.api_json != self.data:
+                if (dir_ids != self.media_ids or 
+                        media_ids(self.data, True) != self.media_ids):
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, True)
@@ -248,7 +249,7 @@ class PlexRecentlyAddedSensor(Entity):
                                 continue
             else:
                 """Update if media items have changed"""
-                if self.api_json != self.data:
+                if media_ids(self.data, True) != self.media_ids:
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, False)
@@ -259,10 +260,10 @@ class PlexRecentlyAddedSensor(Entity):
 def image_url(url_elements, cert_check, img):
     """Plex can resize images with a long & partially % encoded url."""
     from urllib.parse import quote
-    ssl, host, local, port, token, self_cert = url_elements
+    ssl, host, local, port, token, self_cert, dl_images = url_elements
     if not cert_check and not self_cert:
         ssl = ''
-    if self.dl_images:
+    if dl_images:
         host = local
     encoded = quote('http{0}://{1}:{2}{3}'.format(ssl, local,
                                                   port, img), safe='')
