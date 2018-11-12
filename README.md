@@ -24,7 +24,7 @@ This component does not require, nor conflict with, the default Plex components.
 | download_images | true | no | Setting this to false will turn off downloading of images, but will require certain Plex settings to work. See below.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 
-#### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in the upcoming list are downloaded. Images are small in size and are removed automatically when no longer needed.
+#### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in the upcoming list are downloaded. Images are small in size and are removed automatically when no longer needed. Currently & unfortunately, this may not work on all systems.
 
 #### If you prefer to not download the images you may set download_images to false, but you either have to set "Secure connections" to "preferred" or have a custom certificate set (both options are found in your Plex server's network settings). This is needed because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. Your server also needs to be "fully accessible outside your network" if you wish to be able to see images remotely. If your Plex server provides it's own certificate you only need to set ssl_cert to true and download_images to false. 
 
