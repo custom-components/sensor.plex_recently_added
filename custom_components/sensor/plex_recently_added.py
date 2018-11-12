@@ -17,7 +17,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.0.9'
+__version__ = '0.1.0'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class PlexRecentlyAddedSensor(Entity):
             if self.dl_images:
                 directory = 'www' + self._dir
                 if not os.path.exists(directory):
-                    os.makedirs(directory)
+                    os.makedirs(directory, mode=0o777)
 
                 """Make list of images in dir that use our naming scheme"""
                 dir_re = re.compile(r'[pf]\d+\.jpg')  # p1234.jpg or f1234.jpg
