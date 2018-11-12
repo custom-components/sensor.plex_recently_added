@@ -1,6 +1,6 @@
 """
 Home Assistant component to feed the Upcoming Media Lovelace card with
-Plexs recently added media.
+Plex recently added media.
 
 https://github.com/custom-components/sensor.plex_recently_added
 
