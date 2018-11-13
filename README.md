@@ -49,7 +49,7 @@ This component does not require, nor conflict with, the default Plex components.
       entity: sensor.plex_recently_added
       title: Recently Downloaded
 
-## \*Currently genres and studio only work for Movies
+## \*Currently genres, rating, and studio only work for Movies
 ### Card Content Defaults
 
 | key | default | example |
