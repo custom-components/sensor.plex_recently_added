@@ -14,10 +14,10 @@ import requests
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import CONF_SSL
+from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.0'
+__version__ = '0.1.1'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -32,8 +32,10 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SSL_CERT, default=False): cv.boolean,
     vol.Required(CONF_TOKEN): cv.string,
     vol.Optional(CONF_MAX, default=5): cv.string,
-    vol.Required(CONF_SERVER): cv.string,
+    vol.Optional(CONF_SERVER): cv.string,
     vol.Optional(CONF_DL_IMAGES, default=True): cv.boolean,
+    vol.Optional(CONF_HOST, default='localhost'): cv.string,
+    vol.Optional(CONF_PORT, default=32400): cv.port,
 })
 
 
@@ -54,8 +56,13 @@ class PlexRecentlyAddedSensor(Entity):
         self.server_name = conf.get(CONF_SERVER)
         self.max_items = int(conf.get(CONF_MAX))
         self.dl_images = conf.get(CONF_DL_IMAGES)
-        self.server_ip, self.local_ip, self.port = get_server_ip(
-            self.server_name, self.token)
+        if self.server_name:
+            self.server_ip, self.local_ip, self.port = get_server_ip(
+                self.server_name, self.token)
+        else:
+            self.server_ip = conf.get(CONF_HOST)
+            self.local_ip = conf.get(CONF_HOST)
+            self.port = conf.get(CONF_PORT)
         self.url_elements = [self.ssl, self.server_ip, self.local_ip,
                              self.port, self.token, self.cert, self.dl_images]
         self.change_detected = False
@@ -323,3 +330,4 @@ def media_ids(data, remote):
         ids = ids * 2
     ids.sort(key=int)
     return ids
+    
