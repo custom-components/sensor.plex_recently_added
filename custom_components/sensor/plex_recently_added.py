@@ -17,7 +17,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.1'
+__version__ = '0.1.2'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -247,9 +247,9 @@ class PlexRecentlyAddedSensor(Entity):
                             else:
                                 pass
                         if not os.path.isfile(poster_jpg):
-                            if image_url(self.url_elements, True, fanart):
+                            if image_url(self.url_elements, True, poster):
                                 image = plex.get(image_url(
-                                    self.url_elements, True, fanart),
+                                    self.url_elements, True, poster),
                                     headers=headers, timeout=10).content
                                 open(poster_jpg, 'wb').write(image)
                             else:
@@ -330,4 +330,3 @@ def media_ids(data, remote):
         ids = ids * 2
     ids.sort(key=int)
     return ids
-    
