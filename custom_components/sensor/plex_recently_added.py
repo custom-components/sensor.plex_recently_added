@@ -102,6 +102,10 @@ class PlexRecentlyAddedSensor(Entity):
                     key = media['ratingKey']
                 else:
                     continue
+                if 'originallyAvailableAt' in media:
+                    card_item['aired'] = media['originallyAvailableAt']
+                else:
+                    card_item['aired'] = ''
                 if 'addedAt' in media:
                     card_item['airdate'] = media['addedAt']
                 else:
