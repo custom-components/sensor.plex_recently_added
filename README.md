@@ -6,6 +6,8 @@ This component does not require, nor conflict with, the default Plex components.
 <link href="https://fonts.googleapis.com/css?family=Lato&subset=latin,latin-ext" rel="stylesheet"><a class="bmc-button" target="_blank" href="https://www.buymeacoffee.com/FgwNR2l"><img src="https://www.buymeacoffee.com/assets/img/BMC-btn-logo.svg" alt="Buy me a coffee"><span style="margin-left:5px">If you feel I deserve it, you can buy me a coffee</span></a></br>
 </br>
 
+### If you're having issues, check out the [troubleshooting guide](https://github.com/custom-cards/upcoming-media-card/blob/master/troubleshooting.md) before posting an issue or asking for help on the forums.
+
 ## Installation:
 1. Install this component by copying to your `/custom_components/sensor/` folder.
 2. Install the card: [Upcoming Media Card](https://github.com/custom-cards/upcoming-media-card)
