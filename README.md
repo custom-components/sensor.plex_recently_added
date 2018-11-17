@@ -1,12 +1,3 @@
-___
-
-<h1 align="center"> :warning:  THIS IS THE DEV BRANCH!  :warning:</h1>
-<h2 align="center">
-May contain bugs, broken features, and should generally be avoided.</br></br>Master branch is located here:</br> https://github.com/custom-components/sensor.plex_recently_added</h2>
-
-
-___
-
 # Plex Recently Added Component
 
 Home Assistant component to feed [Upcoming Media Card](https://github.com/custom-cards/upcoming-media-card) with
