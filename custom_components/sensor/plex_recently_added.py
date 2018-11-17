@@ -13,11 +13,12 @@ import json
 import requests
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
+from datetime import datetime
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.3'
+__version__ = '0.1.4'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -104,15 +105,16 @@ class PlexRecentlyAddedSensor(Entity):
                     key = media['ratingKey']
                 else:
                     continue
+                if 'addedAt' in media:
+                    card_item['airdate'] = datetime.utcfromtimestamp(
+                        media['addedAt']).strftime('%Y-%m-%dT%H:%M:%SZ')
+                else:
+                    continue
                 if 'originallyAvailableAt' in media:
                     card_item['aired'] = media['originallyAvailableAt']
                 else:
                     card_item['aired'] = ''
-                if 'addedAt' in media:
-                    card_item['airdate'] = media['addedAt']
-                else:
-                    continue
-                if days_since(card_item['airdate'], self._tz) <= 7:
+                if days_since(media['addedAt'], self._tz) <= 7:
                     card_item['release'] = '$day, $date $time'
                 else:
                     card_item['release'] = '$day, $date $time'
@@ -210,7 +212,6 @@ class PlexRecentlyAddedSensor(Entity):
 
             if self.dl_images:
                 directory = self.conf_dir + 'www' + self._dir
-                _LOGGER.warning(directory)
                 if not os.path.exists(directory):
                     os.makedirs(directory, mode=0o777)
 
@@ -313,7 +314,6 @@ def get_server_ip(name, token):
 def days_since(date, tz):
     import time
     from pytz import utc
-    from datetime import datetime
     date = datetime.utcfromtimestamp(date).isoformat() + 'Z'
     date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ')
     date = str(date.replace(tzinfo=utc).astimezone(tz))[:10]
