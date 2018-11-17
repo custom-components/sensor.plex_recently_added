@@ -17,7 +17,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.2'
+__version__ = '0.1.3'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,8 +47,10 @@ class PlexRecentlyAddedSensor(Entity):
 
     def __init__(self, hass, conf):
         from pytz import timezone
+        self.conf_dir = str(hass.config.path()) + '/'
         self._dir = '/custom-lovelace/upcoming-media-card/images/plex/'
-        self.img = '{0}{1}{2}{3}.jpg'.format({}, self._dir, {}, {})
+        self.img = '{0}{1}{2}{3}{4}.jpg'.format(
+            self.conf_dir, {}, self._dir, {}, {})
         self._tz = timezone(str(hass.config.time_zone))
         self.cert = conf.get(CONF_SSL_CERT)
         self.ssl = 's' if conf.get(CONF_SSL) or self.cert else ''
@@ -102,6 +104,10 @@ class PlexRecentlyAddedSensor(Entity):
                     key = media['ratingKey']
                 else:
                     continue
+                if 'originallyAvailableAt' in media:
+                    card_item['aired'] = media['originallyAvailableAt']
+                else:
+                    card_item['aired'] = ''
                 if 'addedAt' in media:
                     card_item['airdate'] = media['addedAt']
                 else:
@@ -203,7 +209,8 @@ class PlexRecentlyAddedSensor(Entity):
                                    reverse=True)[:self.max_items]
 
             if self.dl_images:
-                directory = 'www' + self._dir
+                directory = self.conf_dir + 'www' + self._dir
+                _LOGGER.warning(directory)
                 if not os.path.exists(directory):
                     os.makedirs(directory, mode=0o777)
 
