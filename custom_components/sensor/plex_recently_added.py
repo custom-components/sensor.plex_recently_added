@@ -18,7 +18,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ class PlexRecentlyAddedSensor(Entity):
                 else:
                     continue
                 if 'originallyAvailableAt' in media:
-                    card_item['aired'] = media['originallyAvailableAt']
+                    card_item['aired'] = media.get('originallyAvailableAt', '')
                 else:
                     card_item['aired'] = ''
                 if days_since(media['addedAt'], self._tz) <= 7:
@@ -123,20 +123,20 @@ class PlexRecentlyAddedSensor(Entity):
                 else:
                     card_item['flag'] = True
                 if media['type'] == 'movie':
-                    card_item['title'] = media['title']
+                    card_item['title'] = media.get('title', '')
                     card_item['episode'] = ''
                 elif media['type'] == 'episode':
-                    card_item['title'] = media['grandparentTitle']
-                    card_item['episode'] = media['title']
+                    card_item['title'] = media.get('grandparentTitle', '')
+                    card_item['episode'] = media.get('title', '')
                     card_item['number'] = ('S{:02d}E{:02d}').format(
-                        media['parentIndex'], media['index'])
+                        media.get('parentIndex', ''), media.get('index', ''))
                 else:
                     continue
                 if media.get('duration', 0) > 0:
                     card_item['runtime'] = math.floor(
                         media['duration'] / 60000)
                 if 'studio' in media:
-                    card_item['studio'] = media['studio']
+                    card_item['studio'] = media.get('studio', '')
                 if 'Genre' in media:
                     card_item['genres'] = ', '.join(
                         [genre['tag'] for genre in media['Genre']][:3])
@@ -146,11 +146,11 @@ class PlexRecentlyAddedSensor(Entity):
                 else:
                     card_item['rating'] = ''
                 if media['type'] == 'movie':
-                    poster = media['thumb']
-                    fanart = media['art']
+                    poster = media.get('thumb', '')
+                    fanart = media.get('art', '')
                 elif media['type'] == 'episode':
-                    poster = media['grandparentThumb']
-                    fanart = media['grandparentArt']
+                    poster = media.get('grandparentThumb', '')
+                    fanart = media.get('grandparentArt', '')
                 else:
                     continue
                 if self.dl_images:
@@ -224,7 +224,7 @@ class PlexRecentlyAddedSensor(Entity):
 
                 """Update if media items have changed or images are missing"""
                 if (dir_ids != self.media_ids or 
-                        media_ids(self.data, True) != self.media_ids):
+                        media_ids(self.api_json, True) != self.media_ids):
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, True)
@@ -237,11 +237,11 @@ class PlexRecentlyAddedSensor(Entity):
                         if 'type' not in media:
                             continue
                         elif media['type'] == 'movie':
-                            poster = media['thumb']
-                            fanart = media['art']
+                            poster = media.get('thumb', '')
+                            fanart = media.get('art', '')
                         elif media['type'] == 'episode':
-                            poster = media['grandparentThumb']
-                            fanart = media['grandparentArt']
+                            poster = media.get('grandparentThumb', '')
+                            fanart = media.get('grandparentArt', '')
                         poster_jpg = '{}p{}.jpg'.format(directory,
                                                         media['ratingKey'])
                         fanart_jpg = '{}f{}.jpg'.format(directory,
@@ -264,7 +264,7 @@ class PlexRecentlyAddedSensor(Entity):
                                 continue
             else:
                 """Update if media items have changed"""
-                if media_ids(self.data, True) != self.media_ids:
+                if media_ids(self.api_json, True) != self.media_ids:
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
                     self.media_ids = media_ids(self.data, False)
