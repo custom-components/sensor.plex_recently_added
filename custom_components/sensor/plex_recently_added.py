@@ -205,9 +205,9 @@ class PlexRecentlyAddedSensor(Entity):
             """Get JSON for each library, combine and sort."""
             for library in sections:
                 sub_sec = plex.get(recently_added.format(
-                    library, self.max_items * 2), headers=headers, timeout=10)
-                try: 
+                    library, self.max_items * 2), headers=headers, timeout=10) 
                     _LOGGER.debug(sub_sec.json()['MediaContainer'])
+                try:
                     self.api_json += sub_sec.json()['MediaContainer']['Metadata']
                 except:
                     _LOGGER.warning('No Metadata field in this library')
