@@ -206,7 +206,6 @@ class PlexRecentlyAddedSensor(Entity):
             for library in sections:
                 sub_sec = plex.get(recently_added.format(
                     library, self.max_items * 2), headers=headers, timeout=10) 
-                _LOGGER.debug(sub_sec.json()['MediaContainer'])
                 try:
                     self.api_json += sub_sec.json()['MediaContainer']['Metadata']
                 except:
