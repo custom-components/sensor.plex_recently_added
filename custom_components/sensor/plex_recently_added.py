@@ -37,6 +37,7 @@ CONF_SERVER = 'server_name'
 CONF_SSL_CERT = 'ssl_cert'
 CONF_TOKEN = 'token'
 CONF_MAX = 'max'
+CONF_IMG_CACHE = 'img_dir'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SSL, default=False): cv.boolean,
@@ -47,7 +48,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_DL_IMAGES, default=True): cv.boolean,
     vol.Optional(CONF_HOST, default='localhost'): cv.string,
     vol.Optional(CONF_PORT, default=32400): cv.port,
-    vol.Optional(CONF_IMG_CACHE, default='/custom-lovelace/upcoming-media-card/images/plex/'): cv.string
+    vol.Optional(CONF_IMG_CACHE, 
+                default='/custom-lovelace/upcoming-media-card/images/plex/'): cv.string
 })
 
 
