@@ -47,6 +47,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_DL_IMAGES, default=True): cv.boolean,
     vol.Optional(CONF_HOST, default='localhost'): cv.string,
     vol.Optional(CONF_PORT, default=32400): cv.port,
+    vol.Optional(CONF_IMG_CACHE, default='/custom-lovelace/upcoming-media-card/images/plex/'): cv.string
 })
 
 
@@ -58,7 +59,7 @@ class PlexRecentlyAddedSensor(Entity):
 
     def __init__(self, hass, conf):
         self.conf_dir = str(hass.config.path()) + '/'
-        self._dir = '/custom-lovelace/upcoming-media-card/images/plex/'
+        self._dir = conf.get(CONF_IMG_CACHE)
         self.img = '{0}{1}{2}{3}{4}.jpg'.format(
             self.conf_dir, {}, self._dir, {}, {})
         self._tz = timezone(str(hass.config.time_zone))
