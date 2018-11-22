@@ -26,6 +26,7 @@ This component does not require, nor conflict with, the default Plex components.
 | ssl | false | no | Set to true if you use SSL to access Plex.
 | max | 5 | no | Max number of items to show in sensor.
 | download_images | true | no | Setting this to false will turn off downloading of images, but will require certain Plex settings to work. See below.
+| img_dir | '/custom-lovelace/upcoming-media-card/images/plex/' | no | This option allows you to choose a custom directory to store images in if you enable download_images.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 
 #### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in the upcoming list are downloaded. Images are small in size and are removed automatically when no longer needed. Currently & unfortunately, this may not work on all systems.
