@@ -28,7 +28,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 from pytz import timezone, utc
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 
 _LOGGER = logging.getLogger(__name__)
 
