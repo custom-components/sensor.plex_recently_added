@@ -7,16 +7,26 @@ https://github.com/custom-components/sensor.plex_recently_added
 https://github.com/custom-cards/upcoming-media-card
 
 """
-import os.path
-import logging
 import json
-import requests
-import voluptuous as vol
-import homeassistant.helpers.config_validation as cv
+import logging
+import math
+import os
+import os.path
+import re
+import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
+from unicodedata import normalize
+from urllib.parse import quote
+
+import requests
+
+import homeassistant.helpers.config_validation as cv
+import voluptuous as vol
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
+from pytz import timezone, utc
 
 __version__ = '0.1.6'
 
@@ -27,6 +37,7 @@ CONF_SERVER = 'server_name'
 CONF_SSL_CERT = 'ssl_cert'
 CONF_TOKEN = 'token'
 CONF_MAX = 'max'
+CONF_IMG_CACHE = 'img_dir'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_SSL, default=False): cv.boolean,
@@ -37,6 +48,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_DL_IMAGES, default=True): cv.boolean,
     vol.Optional(CONF_HOST, default='localhost'): cv.string,
     vol.Optional(CONF_PORT, default=32400): cv.port,
+    vol.Optional(CONF_IMG_CACHE, 
+                default='/custom-lovelace/upcoming-media-card/images/plex/'): cv.string
 })
 
 
@@ -47,9 +60,8 @@ def setup_platform(hass, config, add_devices, discovery_info=None):
 class PlexRecentlyAddedSensor(Entity):
 
     def __init__(self, hass, conf):
-        from pytz import timezone
         self.conf_dir = str(hass.config.path()) + '/'
-        self._dir = '/custom-lovelace/upcoming-media-card/images/plex/'
+        self._dir = conf.get(CONF_IMG_CACHE)
         self.img = '{0}{1}{2}{3}{4}.jpg'.format(
             self.conf_dir, {}, self._dir, {}, {})
         self._tz = timezone(str(hass.config.time_zone))
@@ -84,7 +96,6 @@ class PlexRecentlyAddedSensor(Entity):
 
     @property
     def device_state_attributes(self):
-        import math
         attributes = {}
         if self.change_detected:
             self.card_json = []
@@ -174,8 +185,6 @@ class PlexRecentlyAddedSensor(Entity):
         return attributes
 
     def update(self):
-        import re
-        import os
         plex = requests.Session()
         if not self.cert:
             """Default SSL certificate is for plex.tv not our api server"""
@@ -282,7 +291,6 @@ class PlexRecentlyAddedSensor(Entity):
 
 def image_url(url_elements, cert_check, img):
     """Plex can resize images with a long & partially % encoded url."""
-    from urllib.parse import quote
     ssl, host, local, port, token, self_cert, dl_images = url_elements
     if not cert_check and not self_cert:
         ssl = ''
@@ -306,8 +314,6 @@ def image_url(url_elements, cert_check, img):
 
 def get_server_ip(name, token):
     """With a token and server name we get server's ip, local ip, and port"""
-    import xml.etree.ElementTree as ET
-    from unicodedata import normalize
     plex_tv = requests.get(
         'https://plex.tv/api/servers.xml?X-Plex-Token=' + token, timeout=10)
     plex_xml = ET.fromstring(plex_tv.content)
@@ -320,8 +326,6 @@ def get_server_ip(name, token):
 
 
 def days_since(date, tz):
-    import time
-    from pytz import utc
     date = datetime.utcfromtimestamp(date).isoformat() + 'Z'
     date = datetime.strptime(date, '%Y-%m-%dT%H:%M:%SZ')
     date = str(date.replace(tzinfo=utc).astimezone(tz))[:10]
