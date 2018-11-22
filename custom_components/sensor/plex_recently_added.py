@@ -18,7 +18,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.5'
+__version__ = '0.1.7'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,9 +74,8 @@ class PlexRecentlyAddedSensor(Entity):
         self.change_detected = False
         self._state = None
         self.card_json = []
-        self.media_ids = [1]
         self.api_json = []
-        self.data = []
+        self.data = [{1}]
 
     @property
     def name(self):
@@ -208,11 +207,23 @@ class PlexRecentlyAddedSensor(Entity):
             """Get JSON for each library, combine and sort."""
             for library in sections:
                 sub_sec = plex.get(recently_added.format(
-                    library, self.max_items * 2), headers=headers, timeout=10)
-                self.api_json += sub_sec.json()['MediaContainer']['Metadata']
+                    library, self.max_items * 2), headers=headers, timeout=10) 
+                try:
+                    self.api_json += sub_sec.json()['MediaContainer']['Metadata']
+                except:
+                    _LOGGER.warning('No Metadata field for "{}"'.format(sub_sec.json()['MediaContainer']['librarySectionTitle']))
+                    pass
             self.api_json = sorted(self.api_json, key=lambda i: i['addedAt'],
                                    reverse=True)[:self.max_items]
+            overview = get_info(self.api_json[0].get('title', ''))
 
+            """Update attributes if view count changes"""
+            if view_count(self.api_json) != view_count(self.data):
+                self.change_detected = True
+                self.data = self.api_json
+
+            api_ids = media_ids(self.api_json, True)
+            data_ids = media_ids(self.data, True)
             if self.dl_images:
                 directory = self.conf_dir + 'www' + self._dir
                 if not os.path.exists(directory):
@@ -226,14 +237,12 @@ class PlexRecentlyAddedSensor(Entity):
                 dir_ids.sort(key=int)
 
                 """Update if media items have changed or images are missing"""
-                if (dir_ids != self.media_ids or 
-                        media_ids(self.api_json, True) != self.media_ids):
+                if dir_ids != api_ids or data_ids != api_ids:
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
-                    self.media_ids = media_ids(self.data, True)
                     """Remove images not in list"""
                     for file in dir_images:
-                        if not any(str(ids) in file for ids in self.media_ids):
+                        if not any(str(ids) in file for ids in data_ids):
                             os.remove(directory + file)
                     """Retrieve image from Plex if it doesn't exist"""
                     for media in self.data:
@@ -267,10 +276,9 @@ class PlexRecentlyAddedSensor(Entity):
                                 continue
             else:
                 """Update if media items have changed"""
-                if media_ids(self.api_json, True) != self.media_ids:
+                if api_ids != data_ids:
                     self.change_detected = True  # Tell attributes to update
                     self.data = self.api_json
-                    self.media_ids = media_ids(self.data, False)
         else:
             self._state = '%s cannot be reached' % self.server_ip
 
@@ -340,3 +348,24 @@ def media_ids(data, remote):
         ids = ids * 2
     ids.sort(key=int)
     return ids
+
+
+def view_count(data):
+    ids = []
+    for media in data:
+        if 'ratingKey' in media:
+            if 'viewCount' in media:
+                ids.append(str(media['viewCount']))
+            else:
+                ids.append('0')
+        else:
+            continue
+    return ids
+
+
+def get_info(title):
+    tmdb_url = requests.get('https://api.themoviedb.org/3/search/movie?'
+                            'api_key=1f7708bb9a218ab891a5d438b1b63992&query='
+                            + title)
+    tmdb_json = tmdb_url.json()
+    return tmdb_json['results'][0]['overview']
