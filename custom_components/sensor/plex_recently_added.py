@@ -367,5 +367,9 @@ def get_info(title):
     tmdb_url = requests.get('https://api.themoviedb.org/3/search/movie?'
                             + 'api_key=1f7708bb9a218ab891a5d438b1b63992&query='
                             + title)
-    tmdb_json = tmdb_url.json()
-    return tmdb_json['results'][0]['overview']
+    try:
+        tmdb_json = tmdb_url.json()['results'][0]['overview']
+    except:
+        _LOGGER.warning("Failed to get information from TMDB")
+        tmdb_json = {}
+    return tmdb_json
