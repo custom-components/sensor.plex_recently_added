@@ -18,7 +18,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -215,7 +215,6 @@ class PlexRecentlyAddedSensor(Entity):
                     pass
             self.api_json = sorted(self.api_json, key=lambda i: i['addedAt'],
                                    reverse=True)[:self.max_items]
-            overview = get_info(self.api_json[0].get('title', ''))
 
             """Update attributes if view count changes"""
             if view_count(self.api_json) != view_count(self.data):
@@ -361,15 +360,3 @@ def view_count(data):
         else:
             continue
     return ids
-
-
-def get_info(title):
-    tmdb_url = requests.get('https://api.themoviedb.org/3/search/movie?'
-                            + 'api_key=1f7708bb9a218ab891a5d438b1b63992&query='
-                            + title)
-    try:
-        tmdb_json = tmdb_url.json()['results'][0]['overview']
-    except:
-        _LOGGER.warning("Failed to get information from TMDB")
-        tmdb_json = {}
-    return tmdb_json
