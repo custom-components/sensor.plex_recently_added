@@ -55,6 +55,7 @@ class PlexRecentlyAddedSensor(Entity):
         self._dir = conf.get(CONF_IMG_CACHE)
         self.img = '{0}{1}{2}{3}{4}.jpg'.format(
             self.conf_dir, {}, self._dir, {}, {})
+        self.img_url = '{0}{1}{2}{3}.jpg'.format({}, self._dir, {}, {})
         self._tz = timezone(str(hass.config.time_zone))
         self.cert = conf.get(CONF_SSL_CERT)
         self.ssl = 's' if conf.get(CONF_SSL) or self.cert else ''
@@ -157,13 +158,13 @@ class PlexRecentlyAddedSensor(Entity):
                     continue
                 if self.dl_images:
                     if os.path.isfile(self.img.format('www', 'p', key)):
-                        card_item['poster'] = self.img.format('../local',
-                                                              'p', key)
+                        card_item['poster'] = self.img_url.format('/local',
+                                                                  'p', key)
                     else:
                         continue
                     if os.path.isfile(self.img.format('www', 'f', key)):
-                        card_item['fanart'] = self.img.format('../local',
-                                                              'f', key)
+                        card_item['fanart'] = self.img_url.format('/local',
+                                                                  'f', key)
                     else:
                         card_item['fanart'] = ''
                 else:
