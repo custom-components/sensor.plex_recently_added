@@ -1,6 +1,6 @@
 ---
 name: Plex Recently Added Component
-about: Create a report to help us improve
+about: Issues with the component
 title: ''
 labels: ''
 assignees: ''
