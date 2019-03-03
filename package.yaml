@@ -1,0 +1,14 @@
+name: Plex Recently Added Component
+description: Home Assistant component to feed Upcoming Media Card with Plex's recently added media
+type: component
+keywords:
+  - plex
+  - recent
+  - recently
+  - playlist
+  - media
+author:
+  name: Ryan Meek
+license: Apache License, Version 2.0
+files:
+  - custom_components/plex_recently_added/sensor.py
