@@ -18,7 +18,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.2.3'
+__version__ = '0.2.4'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -299,8 +299,12 @@ def image_url(url_elements, cert_check, img):
         ssl = ''
     if dl_images:
         host = local
-    encoded = quote('http{0}://{1}:{2}{3}'.format(ssl, local,
-                                                  port, img), safe='')
+    encoded = quote('http{0}://{1}:{2}{3}?X-Plex-Token={4}'.format(ssl,
+                                                                   local,
+                                                                   port,
+                                                                   img,
+                                                                   token),
+                                                                   safe='')
     url = ('http{0}://{1}:{2}/photo/:/transcode?width=200&height=200'
            '&minSize=1&url={3}&X-Plex-Token={4}').format(ssl, host, port,
                                                          encoded, token)
