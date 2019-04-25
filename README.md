@@ -9,7 +9,7 @@ This component does not require, nor conflict with, the default Plex components.
 ### If you're having issues, check out the [troubleshooting guide](https://github.com/custom-cards/upcoming-media-card/blob/master/troubleshooting.md) before posting an issue or asking for help on the forums.
 
 ## Installation:
-1. Install this component by copying sensor.py to `custom_components/plex_recently_added/`.
+1. Install this component by copying [these files](https://github.com/custom-components/sensor.plex_recently_added/tree/master/custom_components/plex_recently_added) to `custom_components/plex_recently_added/`.
 2. Install the card: [Upcoming Media Card](https://github.com/custom-cards/upcoming-media-card)
 3. Add the code to your `configuration.yaml` using the config options below.
 4. Add the code for the card to your `ui-lovelace.yaml`. 
