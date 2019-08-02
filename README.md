@@ -19,6 +19,7 @@ This component does not require, nor conflict with, the default Plex components.
 
 | key | default | required | description
 | --- | --- | --- | ---
+| name | Plex_Recently_Added | no | Name of the sensor. Useful to make multiple sensors with different libraries.
 | token | | yes | Your Plex token [(Find your Plex token)](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
 | host | localhost | Required if server_name not used | The host Plex is running on (Not required if Plex is accessable outside your network and server_name is used).
 | port | 32400 | Required if server_name not used | The port Plex is running on (Not required if Plex is accessable outside your network and server_name is used).
@@ -55,6 +56,33 @@ This component does not require, nor conflict with, the default Plex components.
     - type: custom:upcoming-media-card
       entity: sensor.plex_recently_added
       title: Recently Downloaded
+
+### Multiple sensor sample for configuration.yaml:
+```yaml
+  - platform: plex_recently_added
+    name: Recently Added Movies
+    token: !secret plex_api_key
+    host: !secret docker_host
+    port: 32400
+    ssl: false
+    ssl_cert: false
+    download_images: false
+    max: 5
+    section_types:
+    - movie
+
+  - platform: plex_recently_added
+    name: Recently Added TV
+    token: !secret plex_api_key
+    host: !secret docker_host
+    port: 32400
+    ssl: false
+    ssl_cert: false
+    download_images: false
+    max: 5
+    section_types:
+    - show
+```
 
 ## \*Currently genres, rating, and studio only work for Movies
 ### Card Content Defaults
