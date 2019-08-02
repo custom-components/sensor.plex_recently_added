@@ -38,7 +38,7 @@ This component does not require, nor conflict with, the default Plex components.
 </br></br>
 **Do not just copy examples, please use config options above to build your own!**
 ### Sample for configuration.yaml:
-
+```yaml
     sensor:
     - platform: plex_recently_added
       token: YOUR_PLEX_TOKEN
@@ -50,36 +50,28 @@ This component does not require, nor conflict with, the default Plex components.
       section_types:
       - movie
       - show
-
+```
 ### Sample for ui-lovelace.yaml:
-
+```yaml
     - type: custom:upcoming-media-card
       entity: sensor.plex_recently_added
       title: Recently Downloaded
-
+```
 ### Multiple sensor sample for configuration.yaml:
 ```yaml
   - platform: plex_recently_added
-    name: Recently Added Movies
-    token: !secret plex_api_key
-    host: !secret docker_host
+    name: Recently Added Movies # will create sensor.recently_added_movies
+    token: !secret token
+    host: !secret host
     port: 32400
-    ssl: false
-    ssl_cert: false
-    download_images: false
-    max: 5
     section_types:
     - movie
 
   - platform: plex_recently_added
-    name: Recently Added TV
-    token: !secret plex_api_key
-    host: !secret docker_host
+    name: Recently Added TV  # will create sensor.recently_added_tv
+    token: !secret token
+    host: !secret host
     port: 32400
-    ssl: false
-    ssl_cert: false
-    download_images: false
-    max: 5
     section_types:
     - show
 ```
