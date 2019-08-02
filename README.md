@@ -21,9 +21,8 @@ This component does not require, nor conflict with, the default Plex components.
 | --- | --- | --- | ---
 | name | Plex_Recently_Added | no | Name of the sensor. Useful to make multiple sensors with different libraries.
 | token | | yes | Your Plex token [(Find your Plex token)](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)
-| host | localhost | Required if server_name not used | The host Plex is running on (Not required if Plex is accessable outside your network and server_name is used).
-| port | 32400 | Required if server_name not used | The port Plex is running on (Not required if Plex is accessable outside your network and server_name is used).
-| server_name |  | Required if host & port aren't used | The name of your Plex server. Can be found in Plex's server settings in "General".
+| host | localhost | yes | The host Plex is running on.
+| port | 32400 | yes | The port Plex is running on.
 | ssl | false | no | Set to true if you use SSL to access Plex.
 | max | 5 | no | Max number of items to show in sensor.
 | download_images | true | no | Setting this to false will turn off downloading of images, but will require certain Plex settings to work. See below.
