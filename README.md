@@ -41,7 +41,8 @@ This component does not require, nor conflict with, the default Plex components.
     sensor:
     - platform: plex_recently_added
       token: YOUR_PLEX_TOKEN
-      server_name: PLEX_SERVER_NAME
+      host: 192.168.1.42
+      port: 32400
       ssl: true
       ssl_cert: false
       download_images: false
