@@ -15,14 +15,15 @@ import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
 from datetime import datetime
 from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import CONF_HOST, CONF_PORT, CONF_SSL
+from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.2.6'
+__version__ = '0.2.9'
 
 _LOGGER = logging.getLogger(__name__)
 
 CONF_DL_IMAGES = 'download_images'
+DEFAULT_NAME = 'Plex Recently Added'
 CONF_SERVER = 'server_name'
 CONF_SSL_CERT = 'ssl_cert'
 CONF_TOKEN = 'token'
@@ -31,6 +32,7 @@ CONF_IMG_CACHE = 'img_dir'
 CONF_SECTION_TYPES = 'section_types'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
+    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
     vol.Optional(CONF_SSL, default=False): cv.boolean,
     vol.Optional(CONF_SSL_CERT, default=False): cv.boolean,
     vol.Required(CONF_TOKEN): cv.string,
@@ -47,13 +49,15 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 
 def setup_platform(hass, config, add_devices, discovery_info=None):
-    add_devices([PlexRecentlyAddedSensor(hass, config)], True)
+    name = config.get(CONF_NAME)
+    add_devices([PlexRecentlyAddedSensor(hass, config, name)], True)
 
 
 class PlexRecentlyAddedSensor(Entity):
 
-    def __init__(self, hass, conf):
+    def __init__(self, hass, conf, name):
         from pytz import timezone
+        self._name = name
         self.conf_dir = str(hass.config.path()) + '/'
         self._dir = conf.get(CONF_IMG_CACHE)
         self.img = '{0}{1}{2}{3}{4}.jpg'.format(
@@ -84,7 +88,7 @@ class PlexRecentlyAddedSensor(Entity):
 
     @property
     def name(self):
-        return 'Plex_Recently_Added'
+        return self._name
 
     @property
     def state(self):
