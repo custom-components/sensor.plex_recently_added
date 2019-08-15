@@ -36,20 +36,13 @@ This component does not require, nor conflict with, the default Plex components.
 
 </br></br>
 **Do not just copy examples, please use config options above to build your own!**
-### Sample for configuration.yaml:
+### Sample for minimal config needed in configuration.yaml:
 ```yaml
     sensor:
     - platform: plex_recently_added
       token: YOUR_PLEX_TOKEN
       host: 192.168.1.42
       port: 32400
-      ssl: true
-      ssl_cert: false
-      download_images: false
-      max: 5
-      section_types:
-      - movie
-      - show
 ```
 ### Sample for ui-lovelace.yaml:
 ```yaml
