@@ -44,7 +44,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PORT, default=32400): cv.port,
     vol.Optional(CONF_SECTION_TYPES,
                 default=['movie', 'show']): vol.All(cv.ensure_list, [cv.string]),
-    vol.Optional(CONF_RESOLUTION, default=200): cv.positive_int
+    vol.Optional(CONF_RESOLUTION, default=200): cv.positive_int,
     vol.Optional(CONF_IMG_CACHE, 
                 default='/upcoming-media-card-images/plex/'): cv.string
 })
