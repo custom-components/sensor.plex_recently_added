@@ -18,7 +18,7 @@ from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
-__version__ = '0.2.9'
+__version__ = '0.3.1'
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,9 +44,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PORT, default=32400): cv.port,
     vol.Optional(CONF_SECTION_TYPES,
                 default=['movie', 'show']): vol.All(cv.ensure_list, [cv.string]),
-    vol.Optional(CONF_IMG_CACHE,
-                default='/custom-lovelace/upcoming-media-card/images/plex/'): cv.string,
     vol.Optional(CONF_RESOLUTION, default=200): cv.positive_int
+    vol.Optional(CONF_IMG_CACHE, 
+                default='/upcoming-media-card-images/plex/'): cv.string
 })
 
 
@@ -62,6 +62,8 @@ class PlexRecentlyAddedSensor(Entity):
         self._name = name
         self.conf_dir = str(hass.config.path()) + '/'
         self._dir = conf.get(CONF_IMG_CACHE)
+        if self._name:
+            self._dir = self._dir + self._name.replace(' ', '_') + '/'
         self.img = '{0}{1}{2}{3}{4}.jpg'.format(
             self.conf_dir, {}, self._dir, {}, {})
         self.img_url = '{0}{1}{2}{3}.jpg'.format({}, self._dir, {}, {})
@@ -185,7 +187,7 @@ class PlexRecentlyAddedSensor(Entity):
                                                     False, fanart, self.resolution)
                 self.card_json.append(card_item)
                 self.change_detected = False
-        attributes['data'] = json.dumps(self.card_json)
+        attributes['data'] = self.card_json
         return attributes
 
     def update(self):
