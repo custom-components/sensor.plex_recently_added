@@ -32,6 +32,7 @@ Read through these two resources before posting issues to GitHub or the forums.
 | port | 32400 | yes | The port Plex is running on.
 | ssl | false | no | Set to true if you use SSL to access Plex.
 | max | 5 | no | Max number of items to show in sensor.
+| on_deck | False | no | Set to true to show "on deck" items.
 | download_images | true | no | Setting this to false will turn off downloading of images, but will require certain Plex settings to work. See below.
 | img_dir | '/upcoming-media-card-images/plex/' | no | This option allows you to choose a custom directory to store images in if you enable download_images. Directory must start and end with a `/`.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.

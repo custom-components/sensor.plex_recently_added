@@ -49,6 +49,7 @@ CONF_MAX = 'max'
 CONF_IMG_CACHE = 'img_dir'
 CONF_SECTION_TYPES = 'section_types'
 CONF_RESOLUTION = 'image_resolution'
+CONF_ON_DECK = 'on_deck'
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
@@ -58,6 +59,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_MAX, default=5): cv.string,
     vol.Optional(CONF_SERVER): cv.string,
     vol.Optional(CONF_DL_IMAGES, default=True): cv.boolean,
+    vol.Optional(CONF_ON_DECK, default=False): cv.boolean,
     vol.Optional(CONF_HOST, default='localhost'): cv.string,
     vol.Optional(CONF_PORT, default=32400): cv.port,
     vol.Optional(CONF_SECTION_TYPES,
@@ -92,6 +94,7 @@ class PlexRecentlyAddedSensor(Entity):
         self.server_name = conf.get(CONF_SERVER)
         self.max_items = int(conf.get(CONF_MAX))
         self.dl_images = conf.get(CONF_DL_IMAGES)
+        self.on_deck = conf.get(CONF_ON_DECK)
         self.sections = conf.get(CONF_SECTION_TYPES)
         self.resolution = conf.get(CONF_RESOLUTION)
         if self.server_name:
@@ -224,6 +227,8 @@ class PlexRecentlyAddedSensor(Entity):
         all_libraries = url_base + '/all'
         recently_added = (url_base + '/{0}/recentlyAdded?X-Plex-Container-'
                                      'Start=0&X-Plex-Container-Size={1}')
+        on_deck = (url_base + '/{0}/onDeck?X-Plex-Container-'
+                   'Start=0&X-Plex-Container-Size={1}')
 
         """Find the ID of all libraries in Plex."""
         sections = []
@@ -241,7 +246,8 @@ class PlexRecentlyAddedSensor(Entity):
         self._state = 'Online'
         """Get JSON for each library, combine and sort."""
         for library in sections:
-            sub_sec = await request(recently_added.format(
+            recent_or_deck = on_deck if self.on_deck else recently_added
+            sub_sec = await request(recent_or_deck.format(
                 library, self.max_items * 2), self)
             sub_sec = json.loads(sub_sec)
             try:
