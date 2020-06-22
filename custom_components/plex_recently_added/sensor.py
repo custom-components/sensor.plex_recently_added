@@ -15,24 +15,28 @@ import asyncio
 import async_timeout
 import voluptuous as vol
 import homeassistant.helpers.config_validation as cv
-from datetime import datetime
+from datetime import datetime, timedelta
 from homeassistant.components.sensor import PLATFORM_SCHEMA
 from homeassistant.const import CONF_HOST, CONF_NAME, CONF_PORT, CONF_SSL
 from homeassistant.helpers.entity import Entity
 
+SCAN_INTERVAL = timedelta(minutes=3)
 _LOGGER = logging.getLogger(__name__)
 
 
 async def fetch(session, url, self, ssl, content):
-    with async_timeout.timeout(10):
-        async with session.get(
-            url, ssl=ssl, headers={
-                "Accept": "application/json", "X-Plex-Token": self.token}
-        ) as response:
-            if content:
-                return await response.content.read()
-            else:
-                return await response.text()
+    try:
+        with async_timeout.timeout(8):
+            async with session.get(
+                url, ssl=ssl, headers={
+                    "Accept": "application/json", "X-Plex-Token": self.token}
+            ) as response:
+                if content:
+                    return await response.content.read()
+                else:
+                    return await response.text()
+    except:
+        pass
 
 
 async def request(url, self, content=False, ssl=False):
@@ -234,6 +238,9 @@ class PlexRecentlyAddedSensor(Entity):
         sections = []
         try:
             libraries = await request(all_libraries, self)
+            if not libraries:
+                self._state = '%s cannot be reached' % self.server_ip
+                return
             libraries = json.loads(libraries)
             for lib_section in libraries['MediaContainer']['Directory']:
                 if lib_section['type'] in self.sections:
