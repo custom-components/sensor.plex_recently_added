@@ -38,6 +38,7 @@ Read through these two resources before posting issues to GitHub or the forums.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 | section_types | movie, show | no | Allows you to specify which section types to consider [movie, show].
 | image_resolution | 200 | no | Allows you to change the resolution of the generated images (in px), useful to display higher quality images as a background somewhere.
+| exclude_keywords |  | no | Allows you to specify a list of keywords to be exclude from the sensor if in the title.
 
 #### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in the upcoming list are downloaded. Images are small in size and are removed automatically when no longer needed. Currently & unfortunately, this may not work on all systems.
 
@@ -67,7 +68,7 @@ Read through these two resources before posting issues to GitHub or the forums.
     host: !secret host
     port: 32400
     section_types:
-    - movie
+      - movie
 
   - platform: plex_recently_added
     name: Recently Added TV  # will create sensor.recently_added_tv
@@ -75,7 +76,10 @@ Read through these two resources before posting issues to GitHub or the forums.
     host: !secret host
     port: 32400
     section_types:
-    - show
+      - show
+    exclude_keywords:
+      - Walking dead
+      - kardashians
 ```
 
 ## \*Currently genres, rating, and studio only work for Movies
