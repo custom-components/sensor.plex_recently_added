@@ -1,6 +1,6 @@
 # Plex Recently Added Component
 
-Home Assistant component to feed [Upcoming Media Card](https://github.com/custom-cards/upcoming-media-card) with
+Home Assistant component to feed [Upcoming Media Card](https://github.com/mkanet/upcoming-media-card) with
 Plex's recently added media.</br>
 This component does not require, nor conflict with, the default Plex components.</br></br>
 
