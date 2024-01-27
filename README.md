@@ -4,16 +4,14 @@ Home Assistant component to feed [Upcoming Media Card](https://github.com/custom
 Plex's recently added media.</br>
 This component does not require, nor conflict with, the default Plex components.</br></br>
 
+### New!
+* Added support for Plex 'deep_links' in sensor attributes (Direct URLs to each TV Episode & Movie on Plex Web).
+* Added support for 'season_num' & 'episode_num' in sensor attributes for TV Episodes.
+
 ### Issues
 Read through these two resources before posting issues to GitHub or the forums.
 * [troubleshooting guide](https://github.com/custom-cards/upcoming-media-card/blob/master/troubleshooting.md)
 * [@thomasloven's lovelace guide](https://github.com/thomasloven/hass-config/wiki/Lovelace-Plugins).
-
-## Supporting Development
-- :coffee:&nbsp;&nbsp;[Buy me a coffee](https://www.buymeacoffee.com/FgwNR2l)
-- :1st_place_medal:&nbsp;&nbsp;[Tip some Crypto](https://github.com/sponsors/maykar)
-- :heart:&nbsp;&nbsp;[Sponsor me on GitHub](https://github.com/sponsors/maykar)
-  <br><br>
 
 ## Installation:
 1. Install this component by copying [these files](https://github.com/custom-components/sensor.plex_recently_added/tree/master/custom_components/plex_recently_added) to `custom_components/plex_recently_added/`.
