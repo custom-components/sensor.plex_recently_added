@@ -4,10 +4,11 @@ Home Assistant component to feed [Upcoming Media Card](https://github.com/mkanet
 Plex's recently added media.</br>
 This component does not require, nor conflict with, the default Plex components.</br></br>
 
-### New!
+### **New Features! ⭐**
 * Added support for Plex 'deep_links' in sensor attributes (Direct URLs to each TV Episode & Movie on Plex Web).
 * Added support for 'season_num' & 'episode_num' in sensor attributes for TV Episodes.
-
+<br>
+<br>
 ### Issues
 Read through these two resources before posting issues to GitHub or the forums.
 * [troubleshooting guide](https://github.com/custom-cards/upcoming-media-card/blob/master/troubleshooting.md)
