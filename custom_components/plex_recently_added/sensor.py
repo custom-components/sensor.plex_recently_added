@@ -35,8 +35,8 @@ async def fetch(session, url, self, ssl, content):
                     return await response.content.read()
                 else:
                     return await response.text()
-    except:
-        pass
+    except (aiohttp.ClientError, asyncio.TimeoutError) as e:
+        _LOGGER.error(f"Error fetching data: {e}")
 
 
 async def request(url, self, content=False, ssl=False):
@@ -113,10 +113,9 @@ class PlexRecentlyAddedSensor(Entity):
             _LOGGER.warning(
                 "Plex Recently Added: The server_name option has been removed. Use host and port options instead.")
             return
-        else:
-            self.server_ip = conf.get(CONF_HOST)
-            self.local_ip = conf.get(CONF_HOST)
-            self.port = conf.get(CONF_PORT)
+        self.server_ip = conf.get(CONF_HOST)
+        self.local_ip = conf.get(CONF_HOST)
+        self.port = conf.get(CONF_PORT)
         self.url_elements = [self.ssl, self.server_ip, self.local_ip,
                              self.port, self.token, self.cert, self.dl_images]
         self.change_detected = False
@@ -160,85 +159,79 @@ class PlexRecentlyAddedSensor(Entity):
                 else:
                     continue
                 if 'addedAt' in media:
-                    card_item['airdate'] = datetime.utcfromtimestamp(
-                        media['addedAt']).strftime('%Y-%m-%dT%H:%M:%SZ')
+                    card_item['airdate'] = datetime.utcfromtimestamp(media['addedAt']).strftime('%Y-%m-%dT%H:%M:%SZ')
                 else:
                     continue
-                if 'originallyAvailableAt' in media:
-                    card_item['aired'] = media.get('originallyAvailableAt', '')
-                else:
-                    card_item['aired'] = ''
+                card_item['aired'] = media.get('originallyAvailableAt', '')
                 if days_since(media['addedAt'], self._tz) <= 7:
                     card_item['release'] = '$day, $date $time'
                 else:
                     card_item['release'] = '$day, $date $time'
-                if 'viewCount' in media:
-                    card_item['flag'] = False
-                else:
-                    card_item['flag'] = True
+                card_item['flag'] = 'viewCount' not in media
                 if media['type'] == 'movie':
                     card_item['title'] = media.get('title', '')
                     card_item['episode'] = ''
+                    card_item['number'] = ''
                 elif media['type'] == 'episode':
                     card_item['title'] = media.get('grandparentTitle', '')
                     card_item['episode'] = media.get('title', '')
-                    card_item['number'] = ('S{:02d}E{:02d}').format(
-                        media.get('parentIndex', 0), media.get('index', 0))
+                    season_num, episode_num = media.get('parentIndex', 0), media.get('index', 0)
+                    card_item['season_num'] = season_num
+                    card_item['episode_num'] = episode_num
+                    card_item['number'] = f'S{season_num:02d}E{episode_num:02d}'
                 else:
                     continue
                 if media.get('duration', 0) > 0:
-                    card_item['runtime'] = math.floor(
-                        media['duration'] / 60000)
-                if 'studio' in media:
-                    card_item['studio'] = media.get('studio', '')
-                if 'Genre' in media:
-                    card_item['genres'] = ', '.join(
-                        [genre['tag'] for genre in media['Genre']][:3])
-                if media.get('rating', 0) > 0:
-                    card_item['rating'] = ('\N{BLACK STAR} ' +
-                                           str(media['rating']))
-                else:
-                    card_item['rating'] = ''
+                    card_item['runtime'] = math.floor(media['duration'] / 60000)
+                card_item['studio'] = media.get('studio', '')
+                card_item['genres'] = ', '.join([genre['tag'] for genre in media.get('Genre', [])][:3])
+                card_item['rating'] = ('\N{BLACK STAR} ' + str(media['rating'])) if media.get('rating', 0) > 0 else ''
+                key = media['key'].split('/')[-1]
                 if media['type'] == 'movie':
                     poster = media.get('thumb', '')
                     fanart = media.get('art', '')
                 elif media['type'] == 'episode':
                     poster = media.get('grandparentThumb', '')
                     fanart = media.get('grandparentArt', '')
-                else:
-                    continue
                 if self.dl_images:
                     if os.path.isfile(self.img.format('www', 'p', key)):
-                        card_item['poster'] = self.img_url.format('/local',
-                                                                  'p', key)
-                    else:
-                        continue
+                        card_item['poster'] = self.img_url.format('/local', 'p', key)
                     if os.path.isfile(self.img.format('www', 'f', key)):
-                        card_item['fanart'] = self.img_url.format('/local',
-                                                                  'f', key)
-                    else:
-                        card_item['fanart'] = ''
+                        card_item['fanart'] = self.img_url.format('/local', 'f', key)
                 else:
-                    card_item['poster'] = image_url(self,
-                                                    False, poster, self.resolution)
-                    card_item['fanart'] = image_url(self,
-                                                    False, fanart, self.resolution)
+                    card_item['poster'] = image_url(self, False, poster, self.resolution)
+                    card_item['fanart'] = image_url(self, False, fanart, self.resolution)
                 should_add = True
                 if self.excludes:
                     for exclude in self.excludes:
                         if exclude.lower() in card_item['title'].lower():
                             should_add = False
                 if should_add:
+                    if self.server_identifier:
+                        card_item['deep_link'] = f'http://{self.server_ip}:{self.port}/web/index.html#!/server/{self.server_identifier}/details?key=%2Flibrary%2Fmetadata%2F{key}'
+                    else:
+                        card_item['deep_link'] = None
                     self.card_json.append(card_item)
-                self.change_detected = False
+            self.change_detected = False
         attributes['data'] = self.card_json
         return attributes
 
     async def async_update(self):
         import os
         import re
+        import json
         if self.server_name:
             return
+
+        server_info_url = f'http://{self.server_ip}:{self.port}/?X-Plex-Token={self.token}'
+        try:
+            server_info_response = await request(server_info_url, self)
+            server_info_data = json.loads(server_info_response)
+            self.server_identifier = server_info_data.get('MediaContainer', {}).get('machineIdentifier')
+        except Exception as e:
+            _LOGGER.error(f"Error retrieving Plex server information: {e}")
+            self.server_identifier = None
+
         url_base = 'http{0}://{1}:{2}/library/sections'.format(self.ssl,
                                                                self.server_ip,
                                                                self.port)
