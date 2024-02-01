@@ -36,6 +36,7 @@ Read through these two resources before posting issues to GitHub or the forums.
 | img_dir | '/upcoming-media-card-images/plex/' | no | This option allows you to choose a custom directory to store images in if you enable download_images. Directory must start and end with a `/`.
 | ssl_cert | false | no | If you provide your own SSL certificate in Plex's network settings set this to true.
 | section_types | movie, show | no | Allows you to specify which section types to consider [movie, show].
+| section_libraries |  | no | Allows you to specify which libraries name to consider (if None, all libraries will be considered), for example ['Movies'].
 | image_resolution | 200 | no | Allows you to change the resolution of the generated images (in px), useful to display higher quality images as a background somewhere.
 | exclude_keywords |  | no | Allows you to specify a list of keywords to be exclude from the sensor if in the title.
 
