@@ -52,6 +52,7 @@ CONF_TOKEN = 'token'
 CONF_MAX = 'max'
 CONF_IMG_CACHE = 'img_dir'
 CONF_SECTION_TYPES = 'section_types'
+CONF_SECTION_LIBRARIES = 'section_libraries'
 CONF_EXCLUDE_KEYWORDS = 'exclude_keywords'
 CONF_RESOLUTION = 'image_resolution'
 CONF_ON_DECK = 'on_deck'
@@ -69,6 +70,8 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Optional(CONF_PORT, default=32400): cv.port,
     vol.Optional(CONF_SECTION_TYPES,
                  default=['movie', 'show']): vol.All(cv.ensure_list, [cv.string]),
+    vol.Optional(CONF_SECTION_LIBRARIES): 
+                vol.All(cv.ensure_list, [cv.string]),
     vol.Optional(CONF_EXCLUDE_KEYWORDS):
                 vol.All(cv.ensure_list, [cv.string]),
     vol.Optional(CONF_RESOLUTION, default=200): cv.positive_int,
@@ -103,6 +106,7 @@ class PlexRecentlyAddedSensor(Entity):
         self.dl_images = conf.get(CONF_DL_IMAGES)
         self.on_deck = conf.get(CONF_ON_DECK)
         self.sections = conf.get(CONF_SECTION_TYPES)
+        self.libraries = conf.get(CONF_SECTION_LIBRARIES)
         self.excludes = conf.get(CONF_EXCLUDE_KEYWORDS)
         self.resolution = conf.get(CONF_RESOLUTION)
         if self.server_name:
@@ -252,8 +256,9 @@ class PlexRecentlyAddedSensor(Entity):
                 self._state = '%s cannot be reached' % self.server_ip
                 return
             libraries = json.loads(libraries)
+
             for lib_section in libraries['MediaContainer']['Directory']:
-                if lib_section['type'] in self.sections:
+                if lib_section['type'] in self.sections and (self.libraries is None or lib_section['title'] in self.libraries):
                     sections.append(lib_section['key'])
         except OSError:
             _LOGGER.warning("Host %s is not available", self.server_ip)
