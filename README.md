@@ -1,4 +1,4 @@
-# Upcoming-Media-Card
+# sensor.plex_recently_added
 
 | Poster View | Fan Art View
 | ---- | ---- 
