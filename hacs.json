@@ -1,5 +1,4 @@
 {
     "name": "Plex Recently Added",
-    "content_in_root": false,
-    "domains": ["sensor"]
+    "content_in_root": false
 }
