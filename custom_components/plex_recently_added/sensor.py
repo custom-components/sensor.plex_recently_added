@@ -186,6 +186,7 @@ class PlexRecentlyAddedSensor(Entity):
                 card_item['studio'] = media.get('studio', '')
                 card_item['genres'] = ', '.join([genre['tag'] for genre in media.get('Genre', [])][:3])
                 card_item['rating'] = ('\N{BLACK STAR} ' + str(media['rating'])) if media.get('rating', 0) > 0 else ''
+                card_item['summary'] = media.get('summary', '')
                 key = media['key'].split('/')[-1]
                 if media['type'] == 'movie':
                     poster = media.get('thumb', '')
