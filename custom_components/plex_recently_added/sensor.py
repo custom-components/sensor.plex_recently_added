@@ -252,6 +252,7 @@ class PlexRecentlyAddedSensor(Entity):
                 self._state = '%s cannot be reached' % self.server_ip
                 return
             libraries = json.loads(libraries)
+
             for lib_section in libraries['MediaContainer']['Directory']:
                 if lib_section['type'] in self.sections and (self.libraries is None or lib_section['title'] in self.libraries):
                     sections.append(lib_section['key'])
