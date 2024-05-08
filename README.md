@@ -17,33 +17,31 @@ Read through these two resources before posting issues to GitHub or the forums.
 ## Installation:
 1. Install this component by copying [these files](https://github.com/custom-components/sensor.plex_recently_added/tree/master/custom_components/plex_recently_added) to `custom_components/plex_recently_added/`.
 2. Install the card: [Upcoming Media Card](https://github.com/custom-cards/upcoming-media-card)
-3. Add the code to your `configuration.yaml` using the config options below.
-4. Add the code for the card to your `ui-lovelace.yaml`.
-5. **You will need to restart after installation for the component to start working.**
+3. Add the code for the card to your `ui-lovelace.yaml`.
+4. **You will need to restart after installation for the component to start working.**
 
-### Options
+### Adding device
+To add the **Plex Recently added** integration to your Home Assistant, use this My button:
 
-| key              | default                             | required | description                                                                                                                                    |
-| ---------------- | ----------------------------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| name             | Plex_Recently_Added                 | no       | Name of the sensor. Useful to make multiple sensors with different libraries.                                                                  |
-| token            |                                     | yes      | Your Plex token [(Find your Plex token)](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)             |
-| host             | localhost                           | yes      | The host Plex is running on.                                                                                                                   |
-| port             | 32400                               | yes      | The port Plex is running on.                                                                                                                   |
-| ssl              | false                               | no       | Set to true if you use SSL to access Plex.                                                                                                     |
-| max              | 5                                   | no       | Max number of items to show in sensor.                                                                                                         |
-| on_deck          | False                               | no       | Set to true to show "on deck" items.                                                                                                           |
-| download_images  | true                                | no       | Setting this to false will turn off downloading of images, but will require certain Plex settings to work. See below.                          |
-| img_dir          | '/upcoming-media-card-images/plex/' | no       | This option allows you to choose a custom directory to store images in if you enable download_images. Directory must start and end with a `/`. |
-| ssl_cert         | false                               | no       | If you provide your own SSL certificate in Plex's network settings set this to true.                                                           |
-| section_types    | movie, show                         | no       | Allows you to specify which section types to consider [movie, show].                                                                           |
-| image_resolution | 200                                 | no       | Allows you to change the resolution of the generated images (in px), useful to display higher quality images as a background somewhere.        |
-| exclude_keywords |                                     | no       | Allows you to specify a list of keywords to be exclude from the sensor if in the title.                                                        |
+<a href="https://my.home-assistant.io/redirect/config_flow_start?domain=plex_recently_added" class="my badge" target="_blank"><img src="https://my.home-assistant.io/badges/config_flow_start.svg"></a>
 
-#### By default this addon automatically downloads images from Plex to your /www/custom-lovelace/upcoming-media-card/ directory. The directory is automatically created & only images reported in the upcoming list are downloaded. Images are small in size and are removed automatically when no longer needed. Currently & unfortunately, this may not work on all systems.
+<details><summary style="list-style: none"><h3><b style="cursor: pointer">Manual configuration steps</b></h3></summary>
 
-#### If you prefer to not download the images you may set download_images to false, but you either have to set "Secure connections" to "preferred" or "disabled" (no SSL) or have a custom certificate set (these options are found in your Plex server's network settings). This is needed because the default SSL certificate supplied by Plex is for their own domain and not for your Plex server. Your server also needs to be "fully accessible outside your network" if you wish to be able to see images remotely. If your Plex server provides it's own certificate you only need to set ssl_cert to true and download_images to false.
+If the above My button doesn’t work, you can also perform the following steps manually:
 
-</br></br>
+- Browse to your Home Assistant instance.
+
+- Go to [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/).
+
+- In the bottom right corner, select the [Add Integration button.](https://my.home-assistant.io/redirect/config_flow_start?domain=plex_recently_added)
+
+- From the list, select **Plex Recently added**.
+
+- Follow the instructions on screen to complete the setup.
+</details>
+
+The number of items in sensor, library types, libraries in general, excluded words and show "on deck" options can be changed later.
+
 **Do not just copy examples, please use config options above to build your own!**
 ### Sample for minimal config needed in configuration.yaml:
 ```yaml
