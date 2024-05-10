@@ -14,6 +14,9 @@ CONF_ON_DECK: Final = 'on_deck'
 CONF_LOCAL: Final = 'is_local'
 
 
+USER_AGENT: Final = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.152 Safari/537.36"
+ACCEPTS: Final = "application/xml"
+
 DEFAULT_PARSE_DICT: Final = {
     'title_default': '$title',
     'line1_default': '$episode',

@@ -20,7 +20,7 @@ def parse_data(data, max, base_url, token, identifier):
         output.append(
             {
                 "airdate": date,
-                "title": item.get("title", ""),
+                "title": item.get("grandparentTitle", item.get("parentTitle", item.get("title", ""))),
                 "release": datetime.utcfromtimestamp(int(item.get("addedAt", 0))).strftime('%Y-%m-%dT%H:%M:%SZ'),
                 "episode": item.get("title", ""),
                 "number": f'S{"{:0>2}".format(item.get("parentIndex", "1"))}E{"{:0>2}".format(item.get("index", "1"))}',

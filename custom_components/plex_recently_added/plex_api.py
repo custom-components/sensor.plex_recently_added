@@ -3,7 +3,7 @@ from xml.etree import ElementTree
 import requests
 
 from homeassistant.core import HomeAssistant
-from .const import DEFAULT_PARSE_DICT
+from .const import DEFAULT_PARSE_DICT, USER_AGENT, ACCEPTS
 from .parser import parse_data, parse_library
 
 
@@ -53,7 +53,9 @@ class PlexApi():
         """ Getting the server identifier """
         try:
             info_res = requests.get(info_url + "/", headers={
-                "X-Plex-Token": self._token
+                "X-Plex-Token": self._token,
+                "User-agent": USER_AGENT,
+                "Accepts": ACCEPTS,
             }, timeout=10)
             try:
                 root = ElementTree.fromstring(info_res.text)
@@ -74,7 +76,9 @@ class PlexApi():
         libs = []
         try:
             libraries = requests.get(all_libraries, headers={
-                "X-Plex-Token": self._token
+                "X-Plex-Token": self._token,
+                "User-agent": USER_AGENT,
+                "Accepts": ACCEPTS,
             }, timeout=10)
             try:
                 root = ElementTree.fromstring(libraries.text)
@@ -93,7 +97,9 @@ class PlexApi():
         for library in sections:
             recent_or_deck = on_deck if self._on_deck else recently_added
             sub_sec = requests.get(recent_or_deck.format(library, self._max * 2), headers={
-                "X-Plex-Token": self._token
+                "X-Plex-Token": self._token,
+                "User-agent": USER_AGENT,
+                "Accepts": ACCEPTS,
             }, timeout=10)
             try:
                 root = ElementTree.fromstring(sub_sec.text)
