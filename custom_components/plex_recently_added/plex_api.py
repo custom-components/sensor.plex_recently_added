@@ -7,6 +7,9 @@ from .const import DEFAULT_PARSE_DICT
 from .parser import parse_data, parse_library
 
 
+import logging
+_LOGGER = logging.getLogger(__name__)
+
 class PlexApi():
     def __init__(
         self,
@@ -52,7 +55,11 @@ class PlexApi():
             info_res = requests.get(info_url + "/", headers={
                 "X-Plex-Token": self._token
             }, timeout=10)
-            root = ElementTree.fromstring(info_res.text)
+            try:
+                root = ElementTree.fromstring(info_res.text)
+            except:
+                _LOGGER.error(info_res.text)
+                raise ElementTree.ParseError
             identifier = root.get("machineIdentifier")
         except OSError as e:
             raise FailedToLogin
@@ -69,7 +76,11 @@ class PlexApi():
             libraries = requests.get(all_libraries, headers={
                 "X-Plex-Token": self._token
             }, timeout=10)
-            root = ElementTree.fromstring(libraries.text)
+            try:
+                root = ElementTree.fromstring(libraries.text)
+            except:
+                _LOGGER.error(libraries.text)
+                raise ElementTree.ParseError
             for lib in root.findall("Directory"):
                 libs.append(lib.get("title"))
                 if lib.get("type") in self._section_types and (len(self._section_libraries) == 0 or lib.get("title") in self._section_libraries):
@@ -84,7 +95,11 @@ class PlexApi():
             sub_sec = requests.get(recent_or_deck.format(library, self._max * 2), headers={
                 "X-Plex-Token": self._token
             }, timeout=10)
-            root = ElementTree.fromstring(sub_sec.text)
+            try:
+                root = ElementTree.fromstring(sub_sec.text)
+            except:
+                _LOGGER.error(sub_sec.text)
+                raise ElementTree.ParseError
             data += parse_library(root)
 
         return {
