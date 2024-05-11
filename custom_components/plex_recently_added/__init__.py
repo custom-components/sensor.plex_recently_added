@@ -17,7 +17,7 @@ from .const import (
     CONF_SECTION_LIBRARIES,
     CONF_EXCLUDE_KEYWORDS,
     CONF_ON_DECK,
-    CONF_LOCAL
+    CONF_VERIFY_SSL
     )
 
 
@@ -46,7 +46,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             config_entry.data.get(CONF_SECTION_TYPES, []),
             config_entry.data.get(CONF_SECTION_LIBRARIES, []),
             config_entry.data.get(CONF_EXCLUDE_KEYWORDS, []),
-            config_entry.data[CONF_LOCAL],
+            config_entry.data[CONF_VERIFY_SSL],
         )
     except FailedToLogin as err:
         raise ConfigEntryNotReady("Failed to Log-in") from err

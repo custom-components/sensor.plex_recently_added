@@ -1,6 +1,7 @@
 from pytz import timezone
 from xml.etree import ElementTree
 import requests
+from urllib3.exceptions import InsecureRequestWarning
 
 from homeassistant.core import HomeAssistant
 from .const import DEFAULT_PARSE_DICT, USER_AGENT, ACCEPTS
@@ -23,7 +24,7 @@ class PlexApi():
         section_types: list,
         section_libraries: list,
         exclude_keywords: list,
-        is_local: bool
+        verify_ssl: bool
     ):
         self._hass = hass
         self._ssl = 's' if ssl else ''
@@ -35,28 +36,26 @@ class PlexApi():
         self._section_types = section_types
         self._section_libraries = section_libraries
         self._exclude_keywords = exclude_keywords
-        self._is_local = is_local
+        self._verify_ssl = verify_ssl
 
     def update(self):
-        if self._is_local:
-            info_url = 'http{0}://{1}:{2}'.format(
-                self._ssl,
-                self._host,
-                self._port
-            )
-        else: 
-            info_url = 'http{0}://{1}'.format(
-                self._ssl,
-                self._host,
-            )
+        info_url = 'http{0}://{1}:{2}'.format(
+            self._ssl,
+            self._host,
+            self._port
+        )
 
         """ Getting the server identifier """
+        if not self._verify_ssl:
+            requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
         try:
             info_res = requests.get(info_url + "/", headers={
                 "X-Plex-Token": self._token,
                 "User-agent": USER_AGENT,
                 "Accepts": ACCEPTS,
-            }, timeout=10)
+            },
+            verify=self._verify_ssl,
+            timeout=10)
             try:
                 root = ElementTree.fromstring(info_res.text)
             except:
@@ -79,7 +78,9 @@ class PlexApi():
                 "X-Plex-Token": self._token,
                 "User-agent": USER_AGENT,
                 "Accepts": ACCEPTS,
-            }, timeout=10)
+            },
+            verify=self._verify_ssl,
+            timeout=10)
             try:
                 root = ElementTree.fromstring(libraries.text)
             except:
@@ -100,7 +101,9 @@ class PlexApi():
                 "X-Plex-Token": self._token,
                 "User-agent": USER_AGENT,
                 "Accepts": ACCEPTS,
-            }, timeout=10)
+            },
+            verify=self._verify_ssl, 
+            timeout=10)
             try:
                 root = ElementTree.fromstring(sub_sec.text)
             except:

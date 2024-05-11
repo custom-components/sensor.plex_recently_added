@@ -11,7 +11,7 @@ ALL_SECTION_TYPES: Final = ["movie", "show", "artist", "photo"]
 CONF_SECTION_LIBRARIES: Final = 'section_libraries'
 CONF_EXCLUDE_KEYWORDS: Final = 'exclude_keywords'
 CONF_ON_DECK: Final = 'on_deck'
-CONF_LOCAL: Final = 'is_local'
+CONF_VERIFY_SSL: Final = 'verify_ssl'
 
 
 USER_AGENT: Final = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.152 Safari/537.36"

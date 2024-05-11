@@ -13,7 +13,7 @@
           "section_types": "Which section types to consider",
           "exclude_keywords": "Keyword to be exclude from the sensor",
           "section_libraries": "Which libraries to consider",
-          "is_local": "The server address is local (not using domain)"
+          "verify_ssl": "Verify SSL"
         }
       }
     },

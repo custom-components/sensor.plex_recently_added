@@ -29,7 +29,7 @@ from .const import (
     CONF_SECTION_LIBRARIES,
     CONF_EXCLUDE_KEYWORDS,
     CONF_ON_DECK,
-    CONF_LOCAL
+    CONF_VERIFY_SSL
     )
 
 from .helpers import setup_client
@@ -44,7 +44,7 @@ PLEX_SCHEMA = vol.Schema({
     vol.Required(CONF_PORT, default=32400): vol.All(vol.Coerce(int), vol.Range(min=0)),
     vol.Required(CONF_API_KEY): vol.All(str),
     vol.Optional(CONF_SSL, default=False): vol.All(bool),
-    vol.Optional(CONF_LOCAL, default=False): vol.All(bool),
+    vol.Optional(CONF_VERIFY_SSL, default=True): vol.All(bool),
     vol.Optional(CONF_MAX, default=5): vol.All(vol.Coerce(int), vol.Range(min=0)),
     vol.Optional(CONF_ON_DECK, default=False): vol.All(bool),
     vol.Optional(CONF_SECTION_TYPES, default={"movie", "show"}): SelectSelector(SelectSelectorConfig(options=ALL_SECTION_TYPES, mode=SelectSelectorMode.DROPDOWN ,multiple=True)),
@@ -79,7 +79,7 @@ class PlexConfigFlow(ConfigFlow, domain=DOMAIN):
                     user_input.get(CONF_SECTION_TYPES, []),
                     user_input.get(CONF_SECTION_LIBRARIES, []),
                     user_input.get(CONF_EXCLUDE_KEYWORDS, []),
-                    user_input[CONF_LOCAL],
+                    user_input[CONF_VERIFY_SSL],
                 )
             except FailedToLogin as err:
                 errors = {'base': 'failed_to_login'}
