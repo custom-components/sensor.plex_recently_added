@@ -15,7 +15,7 @@ CONF_VERIFY_SSL: Final = 'verify_ssl'
 
 
 USER_AGENT: Final = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.152 Safari/537.36"
-ACCEPTS: Final = "application/xml"
+ACCEPTS: Final = "application/xml, text/xml;q=0.9"
 
 DEFAULT_PARSE_DICT: Final = {
     'title_default': '$title',

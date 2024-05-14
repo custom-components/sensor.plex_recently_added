@@ -11,6 +11,10 @@ from .parser import parse_data, parse_library
 import logging
 _LOGGER = logging.getLogger(__name__)
 
+def check_headers(response):
+    if 'text/xml' not in response.headers.get('Content-Type', '') and 'application/xml' not in response.headers.get('Content-Type', ''):
+        raise ValueError(f"Expected XML but received different content type: {response.headers.get('Content-Type')}")
+
 class PlexApi():
     def __init__(
         self,
@@ -37,8 +41,8 @@ class PlexApi():
         self._section_libraries = section_libraries
         self._exclude_keywords = exclude_keywords
         self._verify_ssl = verify_ssl
-
-    def update(self):
+    
+    async def update(self):
         info_url = 'http{0}://{1}:{2}'.format(
             self._ssl,
             self._host,
@@ -49,18 +53,20 @@ class PlexApi():
         if not self._verify_ssl:
             requests.packages.urllib3.disable_warnings(category=InsecureRequestWarning)
         try:
-            info_res = requests.get(info_url + "/", headers={
-                "X-Plex-Token": self._token,
-                "User-agent": USER_AGENT,
-                "Accepts": ACCEPTS,
-            },
-            verify=self._verify_ssl,
-            timeout=10)
-            try:
-                root = ElementTree.fromstring(info_res.text)
-            except:
-                _LOGGER.error(info_res.text)
-                raise ElementTree.ParseError
+            info_res = await self._hass.async_add_executor_job(
+                requests.get,
+                f'{info_url}?X-Plex-Token={self._token}', 
+                {
+                    "headers":{
+                        "User-agent": USER_AGENT,
+                        "Accept": ACCEPTS,
+                    },
+                    "verify":self._verify_ssl,
+                    "timeout":10
+                }
+            )
+            check_headers(info_res)
+            root = ElementTree.fromstring(info_res.text)
             identifier = root.get("machineIdentifier")
         except OSError as e:
             raise FailedToLogin
@@ -74,18 +80,20 @@ class PlexApi():
         sections = []
         libs = []
         try:
-            libraries = requests.get(all_libraries, headers={
-                "X-Plex-Token": self._token,
-                "User-agent": USER_AGENT,
-                "Accepts": ACCEPTS,
-            },
-            verify=self._verify_ssl,
-            timeout=10)
-            try:
-                root = ElementTree.fromstring(libraries.text)
-            except:
-                _LOGGER.error(libraries.text)
-                raise ElementTree.ParseError
+            libraries = await self._hass.async_add_executor_job(
+                requests.get,
+                f'{all_libraries}?X-Plex-Token={self._token}', 
+                {
+                    "headers":{
+                        "User-agent": USER_AGENT,
+                        "Accept": ACCEPTS,
+                    },
+                    "verify":self._verify_ssl,
+                    "timeout":10
+                }
+            )
+            check_headers(libraries)
+            root = ElementTree.fromstring(libraries.text)
             for lib in root.findall("Directory"):
                 libs.append(lib.get("title"))
                 if lib.get("type") in self._section_types and (len(self._section_libraries) == 0 or lib.get("title") in self._section_libraries):
@@ -97,18 +105,20 @@ class PlexApi():
         data = []
         for library in sections:
             recent_or_deck = on_deck if self._on_deck else recently_added
-            sub_sec = requests.get(recent_or_deck.format(library, self._max * 2), headers={
-                "X-Plex-Token": self._token,
-                "User-agent": USER_AGENT,
-                "Accepts": ACCEPTS,
-            },
-            verify=self._verify_ssl, 
-            timeout=10)
-            try:
-                root = ElementTree.fromstring(sub_sec.text)
-            except:
-                _LOGGER.error(sub_sec.text)
-                raise ElementTree.ParseError
+            sub_sec = await self._hass.async_add_executor_job(
+                requests.get,
+                f'{recent_or_deck.format(library, self._max * 2)}&X-Plex-Token={self._token}', 
+                {
+                    "headers":{
+                        "User-agent": USER_AGENT,
+                        "Accept": ACCEPTS,
+                    },
+                    "verify":self._verify_ssl,
+                    "timeout":10
+                }
+            )
+            check_headers(sub_sec)
+            root = ElementTree.fromstring(sub_sec.text)
             data += parse_library(root)
 
         return {

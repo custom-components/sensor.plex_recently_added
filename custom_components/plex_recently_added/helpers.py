@@ -1,7 +1,7 @@
 from homeassistant.core import HomeAssistant
 from .plex_api import PlexApi
 
-def setup_client(
+async def setup_client(
     hass: HomeAssistant,
     ssl: bool,
     token: str,
@@ -16,5 +16,5 @@ def setup_client(
     ):
     client = PlexApi(hass, ssl, token, max, on_deck, host, port, section_types, section_libraries, exclude_keywords, verify_ssl)
 
-    client.update()
+    await client.update()
     return client

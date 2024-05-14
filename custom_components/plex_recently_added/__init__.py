@@ -34,8 +34,7 @@ PLATFORMS = [
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     try:
-        client = await hass.async_add_executor_job(
-            setup_client,
+        client = await setup_client(
             hass,
             config_entry.data[CONF_SSL],
             config_entry.data[CONF_API_KEY],

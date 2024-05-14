@@ -28,6 +28,6 @@ class PlexDataCoordinator(DataUpdateCoordinator[Dict[str, Any]]):
     
     async def _async_update_data(self) -> Dict[str, Any]:
         try:
-            return await self.hass.async_add_executor_job(self._client.update)
+            return await self._client.update()
         except FailedToLogin:
             raise ConfigEntryError("Failed to Log-in") from err

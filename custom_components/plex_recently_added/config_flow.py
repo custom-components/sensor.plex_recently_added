@@ -67,8 +67,7 @@ class PlexConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             self._async_abort_entries_match({CONF_API_KEY: user_input[CONF_API_KEY]})
             try:
-                await self.hass.async_add_executor_job(
-                    setup_client,
+                await setup_client(
                     self.hass,
                     user_input[CONF_SSL],
                     user_input[CONF_API_KEY],
