@@ -47,8 +47,8 @@ def parse_data(data, max, base_url, token, identifier, section_key):
                 "studio": item.get("grandparentTitle", ""),
                 "aired": date,
                 "runtime": math.floor(int(item.get("duration", 0)) / 60000),
-                "poster": (base_url + thumb + f'?X-Plex-Token={token}') if thumb else "",
-                "fanart": (base_url + art + f'?X-Plex-Token={token}') if art else "",
+                "poster": (f'/pms_plex_recently_added?path={thumb}') if thumb else "",
+                "fanart": (f'/pms_plex_recently_added?path={art}') if art else "",
                 "flag": "viewCount" not in item,
                 "deep_link": deep_link if identifier else None
             }

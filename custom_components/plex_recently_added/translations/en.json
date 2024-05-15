@@ -22,7 +22,7 @@
       "cannot_be_reached": "Plex cannot be reached"
     },
     "abort": {
-      "already_configured": "User is already configured",
+      "already_configured": "User is already configured (check README)",
       "failed_to_login": "Failed to Log-in",
       "cannot_be_reached": "Plex cannot be reached"
     }
