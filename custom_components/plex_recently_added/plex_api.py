@@ -8,9 +8,6 @@ from .const import DEFAULT_PARSE_DICT, USER_AGENT, ACCEPTS
 from .parser import parse_data, parse_library
 
 
-import logging
-_LOGGER = logging.getLogger(__name__)
-
 def check_headers(response):
     if 'text/xml' not in response.headers.get('Content-Type', '') and 'application/xml' not in response.headers.get('Content-Type', ''):
         raise ValueError(f"Expected XML but received different content type: {response.headers.get('Content-Type')}")
@@ -97,17 +94,22 @@ class PlexApi():
             for lib in root.findall("Directory"):
                 libs.append(lib.get("title"))
                 if lib.get("type") in self._section_types and (len(self._section_libraries) == 0 or lib.get("title") in self._section_libraries):
-                    sections.append(lib.get("key"))
+                    sections.append({'type': lib.get("type"),'key': lib.get("key")})
         except OSError as e:
             raise FailedToLogin
 
         """ Looping through all libraries (sections) """
-        data = []
+        data = {
+            'all': []
+        }
+        for s in self._section_types:
+            data[s] = []
+
         for library in sections:
             recent_or_deck = on_deck if self._on_deck else recently_added
             sub_sec = await self._hass.async_add_executor_job(
                 requests.get,
-                f'{recent_or_deck.format(library, self._max * 2)}&X-Plex-Token={self._token}', 
+                f'{recent_or_deck.format(library["key"], self._max * 2)}&X-Plex-Token={self._token}', 
                 {
                     "headers":{
                         "User-agent": USER_AGENT,
@@ -119,10 +121,16 @@ class PlexApi():
             )
             check_headers(sub_sec)
             root = ElementTree.fromstring(sub_sec.text)
-            data += parse_library(root)
+            parsed_libs = parse_library(root)
+            data['all'] += parsed_libs
+            data[library["type"]] += parsed_libs
+
+        data_out = {}
+        for k in data.keys():
+            data_out[k] = {'data': [DEFAULT_PARSE_DICT] + parse_data(data[k], self._max, info_url, self._token, identifier, k)}
 
         return {
-            "data": {"data": [DEFAULT_PARSE_DICT] + parse_data(data, self._max, info_url, self._token, identifier)}, 
+            "data": {**data_out},
             "online": True,
             "libraries": libs
         }
