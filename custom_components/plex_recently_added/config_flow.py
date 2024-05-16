@@ -69,6 +69,7 @@ class PlexConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 await setup_client(
                     self.hass,
+                    user_input[CONF_NAME],
                     user_input[CONF_SSL],
                     user_input[CONF_API_KEY],
                     user_input[CONF_MAX],

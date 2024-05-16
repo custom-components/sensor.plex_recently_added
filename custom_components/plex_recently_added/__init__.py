@@ -3,6 +3,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
 from homeassistant.const import (
+    CONF_NAME,
     CONF_API_KEY, 
     CONF_HOST, 
     CONF_PORT, 
@@ -37,6 +38,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     try:
         client = await setup_client(
             hass,
+            config_entry.data[CONF_NAME],
             config_entry.data[CONF_SSL],
             config_entry.data[CONF_API_KEY],
             config_entry.data[CONF_MAX],

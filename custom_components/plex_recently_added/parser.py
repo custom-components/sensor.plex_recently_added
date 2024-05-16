@@ -19,7 +19,7 @@ def parse_library(root):
 
     return output
 
-def parse_data(data, max, base_url, token, identifier, section_key):
+def parse_data(data, max, base_url, token, identifier, section_key, images_base_url):
     data = sorted(data, key=lambda i: i['addedAt'], reverse=True)[:max]
 
     output = []
@@ -47,8 +47,8 @@ def parse_data(data, max, base_url, token, identifier, section_key):
                 "studio": item.get("grandparentTitle", ""),
                 "aired": date,
                 "runtime": math.floor(int(item.get("duration", 0)) / 60000),
-                "poster": (f'/pms_plex_recently_added?path={thumb}') if thumb else "",
-                "fanart": (f'/pms_plex_recently_added?path={art}') if art else "",
+                "poster": (f'{images_base_url}?path={thumb}') if thumb else "",
+                "fanart": (f'{images_base_url}?path={art}') if art else "",
                 "flag": "viewCount" not in item,
                 "deep_link": deep_link if identifier else None
             }

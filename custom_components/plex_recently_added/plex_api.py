@@ -16,6 +16,7 @@ class PlexApi():
     def __init__(
         self,
         hass: HomeAssistant,
+        name: str,
         ssl: bool,
         token: str,
         max: int,
@@ -38,6 +39,7 @@ class PlexApi():
         self._section_libraries = section_libraries
         self._exclude_keywords = exclude_keywords
         self._verify_ssl = verify_ssl
+        self._images_base_url = f'/{name.lower() + "_" if len(name) > 0 else ""}plex_recently_added'
     
     async def update(self):
         info_url = 'http{0}://{1}:{2}'.format(
@@ -127,7 +129,7 @@ class PlexApi():
 
         data_out = {}
         for k in data.keys():
-            data_out[k] = {'data': [DEFAULT_PARSE_DICT] + parse_data(data[k], self._max, info_url, self._token, identifier, k)}
+            data_out[k] = {'data': [DEFAULT_PARSE_DICT] + parse_data(data[k], self._max, info_url, self._token, identifier, k, self._images_base_url)}
 
         return {
             "data": {**data_out},

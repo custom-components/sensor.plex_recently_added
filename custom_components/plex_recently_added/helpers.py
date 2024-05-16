@@ -3,6 +3,7 @@ from .plex_api import PlexApi
 
 async def setup_client(
     hass: HomeAssistant,
+    name: str,
     ssl: bool,
     token: str,
     max: int,
@@ -14,7 +15,7 @@ async def setup_client(
     exclude_keywords: list,
     verify_ssl: bool,
     ):
-    client = PlexApi(hass, ssl, token, max, on_deck, host, port, section_types, section_libraries, exclude_keywords, verify_ssl)
+    client = PlexApi(hass, name, ssl, token, max, on_deck, host, port, section_types, section_libraries, exclude_keywords, verify_ssl)
 
     await client.update()
     return client
