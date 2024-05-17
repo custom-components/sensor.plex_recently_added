@@ -102,7 +102,7 @@ class PlexApi():
 
         """ Looping through all libraries (sections) """
         data = {
-            'all': []
+            'all': {}
         }
         for s in self._section_types:
             data[s] = []
@@ -124,12 +124,14 @@ class PlexApi():
             check_headers(sub_sec)
             root = ElementTree.fromstring(sub_sec.text)
             parsed_libs = parse_library(root)
-            data['all'] += parsed_libs
+            if library["type"] not in data['all']:
+                data['all'][library["type"]] = []
+            data['all'][library["type"]] += parsed_libs
             data[library["type"]] += parsed_libs
 
         data_out = {}
         for k in data.keys():
-            data_out[k] = {'data': [DEFAULT_PARSE_DICT] + parse_data(data[k], self._max, info_url, self._token, identifier, k, self._images_base_url)}
+            data_out[k] = {'data': [DEFAULT_PARSE_DICT] + parse_data(data[k], self._max, info_url, self._token, identifier, k, self._images_base_url, k == "all")}
 
         return {
             "data": {**data_out},
