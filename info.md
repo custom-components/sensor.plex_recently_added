@@ -27,3 +27,17 @@ If the above My button doesn’t work, you can also perform the following steps 
 </details>
 
 The number of items in sensor, library types, libraries in general, excluded words and show "on deck" options can be changed later.
+
+## FAQ:
+### When I tried it said *"User already configured"*
+This is because the integration uses the Plex token as a part of its *unique_id* so it does not colide with other instances of the same integration
+
+### I want to change the config of the integration, how do I do it?
+This is very simple, when you go to the *'Settings/Devices & services/Plex Recently Added'* you will see your instance of the Plex Recently Added integration and on the right side you will see **Configure** button, when you press it you can change all necessary config you might need to change and click submit, the instance then should restart and show new values basen on your new settings.
+</br><small>(If you want to change Plex address, token or sensors prefix name you will need to readd the integration with your new parameters)</small>
+
+### The number of items in sensor is not the amount I set it to be
+The sensor you most likely mean is the merged sensor which shows all the data (also sorted) that are in the other sensors, meaning if you've set your man number if values to 7 and you've got 3 section types (movie, show, artist) the total number of items in the merged sensor will be 21 (7 *<small>(for max)</small>* * 3 *<small>(for section types)</small>*)
+
+### My sensor is not showing any values and there are no errors
+This may be caused by incorrectly set *Libraries to consider* you can change them in [Config](#i-want-to-change-the-config-of-the-integration-how-do-i-do-it) where if you've configured your Plex token and address right will now show all libraries in dropdown selection.
