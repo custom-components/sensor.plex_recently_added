@@ -31,7 +31,6 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
 
     output = []
     for item in sorted_data:
-        date = datetime.strptime(item.get("originallyAvailableAt", "1900-01-01"), "%Y-%m-%d").strftime('%Y-%m-%dT%H:%M:%SZ')
         thumb = item.get("thumb", item.get("parentThumb", item.get("grandparentThumb", None)))
         art = item.get("art", item.get("grandparentArt", None))
         deep_link_position = -1
@@ -44,57 +43,31 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
         data_output = {}
 
         data_output["airdate"] = datetime.utcfromtimestamp(int(item.get("addedAt", 0))).strftime('%Y-%m-%dT%H:%M:%SZ')
-        data_output["title"] = item.get("grandparentTitle", item.get("parentTitle", item.get("title", "")))
+        data_output["aired"] = item.get("originallyAvailableAt", "")
         data_output["release"] = '$day, $date $time'
+        data_output["flag"] = "viewCount" not in item
+        data_output["title"] = item.get("grandparentTitle", item.get("parentTitle", item.get("title", "")))
         if item.get("title", None):
             data_output["episode"] = item["title"]
         else:
             data_output["episode"] = ''
-        if item.get("parentIndex", None) and item.get("index", None):
-            data_output["number"] = f'S{"{:0>2}".format(item.get("parentIndex", "1"))}E{"{:0>2}".format(item.get("index", "1"))}'
-        else:
-            data_output["number"] = ''
         if item.get("parentIndex", None):
             data_output["season_num"] = item["parentIndex"]
         if item.get("index", None):
             data_output["episode_num"] = item["index"]
-        data_output["genres"] = ", ".join([genre['tag'] for genre in item.get('Genre', [])][:3])
-        data_output["rating"] = ('\N{BLACK STAR} ' + str(item.get("rating"))) if int(float(item.get("rating", 0))) > 0 else ''
-        data_output["studio"] = item.get("studio", "")
-        data_output["aired"] = date
+        if item.get("parentIndex", None) and item.get("index", None):
+            data_output["number"] = f'S{"{:0>2}".format(item.get("parentIndex", "1"))}E{"{:0>2}".format(item.get("index", "1"))}'
+        else:
+            data_output["number"] = ''
         if int(item.get('duration', 0)) > 0:
             data_output["runtime"] = math.floor(int(item["duration"]) / 60000)
+        data_output["studio"] = item.get("studio", "")
+        data_output["genres"] = ", ".join([genre['tag'] for genre in item.get('Genre', [])][:3])
+        data_output["rating"] = ('\N{BLACK STAR} ' + str(item.get("rating"))) if int(float(item.get("rating", 0))) > 0 else ''
+        data_output['summary'] = item.get('summary', '')
         data_output["poster"] = (f'{images_base_url}?path={thumb}') if thumb else ""
         data_output["fanart"] = (f'{images_base_url}?path={art}') if art else ""
-        data_output["flag"] = "viewCount" not in item
         data_output["deep_link"] = deep_link if identifier else None
-
-
-
-
-        """
-        output.append(
-            {
-                "airdate": datetime.utcfromtimestamp(int(item.get("addedAt", 0))).strftime('%Y-%m-%dT%H:%M:%SZ'),
-                "title": item.get("grandparentTitle", item.get("parentTitle", item.get("title", ""))),
-                "release": '$day, $date $time',
-                "episode": item.get("title", ""),
-                "number": f'S{"{:0>2}".format(item.get("parentIndex", "1"))}E{"{:0>2}".format(item.get("index", "1"))}' if item.get("parentIndex", None) and item.get("index", None) else "",
-                "season_num": item.get("parentIndex", ""),
-                "season_num": item.get("parentIndex", "1"),
-                "episode_num": item.get("index", "1"),
-                "genres": ", ".join([genre['tag'] for genre in item.get('Genre', [])][:3]),
-                "rating": ('\N{BLACK STAR} ' + str(item.get("rating"))) if int(float(item.get("rating", 0))) > 0 else '',
-                "studio": item.get("studio", ""),
-                "aired": date,
-                "runtime": math.floor(int(item.get("duration", 0)) / 60000),
-                "poster": (f'{images_base_url}?path={thumb}') if thumb else "",
-                "fanart": (f'{images_base_url}?path={art}') if art else "",
-                "flag": "viewCount" not in item,
-                "deep_link": deep_link if identifier else None
-            }
-        )
-        """
 
         output.append(data_output)
 
