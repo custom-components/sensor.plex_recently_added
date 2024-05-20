@@ -27,7 +27,7 @@ async def async_setup_entry(
     coordinator: PlexDataCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     section_types = config_entry.data[CONF_SECTION_TYPES]
 
-    async_add_entities([PlexRecentlyAddedSensor(coordinator, config_entry, type) for type in section_types] + [PlexRecentlyAddedSensor(coordinator, config_entry)], update_before_add=True)
+    async_add_entities([PlexRecentlyAddedSensor(coordinator, config_entry, type) for type in section_types] + [PlexRecentlyAddedSensor(coordinator, config_entry)])
 
 
 class PlexRecentlyAddedSensor(CoordinatorEntity[PlexDataCoordinator], SensorEntity):
