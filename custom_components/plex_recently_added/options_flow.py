@@ -7,7 +7,9 @@ from homeassistant.helpers.selector import (
     SelectSelectorConfig,
     SelectSelectorMode,
     TextSelector,
-    TextSelectorConfig
+    TextSelectorConfig,
+    ConstantSelector,
+    ConstantSelectorConfig,
 )
 
 from .const import (
@@ -16,6 +18,7 @@ from .const import (
     CONF_SECTION_LIBRARIES,
     ALL_SECTION_TYPES,
     CONF_EXCLUDE_KEYWORDS,
+    CONF_EXCLUDE_KEYWORDS_LABEL,
     CONF_MAX,
     CONF_ON_DECK,
     )
@@ -49,6 +52,7 @@ class PlexOptionFlow(OptionsFlow):
             vol.Optional(CONF_MAX, default=self._config_entry.data[CONF_MAX]): vol.All(vol.Coerce(int), vol.Range(min=0)),
             vol.Optional(CONF_SECTION_TYPES, default=self._config_entry.data.get(CONF_SECTION_TYPES, [])): SelectSelector(SelectSelectorConfig(options=ALL_SECTION_TYPES ,multiple=True, mode=SelectSelectorMode.DROPDOWN)),
             vol.Optional(CONF_SECTION_LIBRARIES, default=self._config_entry.data.get(CONF_SECTION_LIBRARIES, [])): SelectSelector(SelectSelectorConfig(options=[str(item) for item in coordinator.data["libraries"]] ,multiple=True, mode=SelectSelectorMode.DROPDOWN)),
+            vol.Optional(CONF_EXCLUDE_KEYWORDS + "_label"): ConstantSelector(ConstantSelectorConfig(value=CONF_EXCLUDE_KEYWORDS_LABEL)),
             vol.Optional(CONF_EXCLUDE_KEYWORDS, default=self._config_entry.data.get(CONF_EXCLUDE_KEYWORDS, [])): TextSelector(TextSelectorConfig(multiple=True, multiline=False)),
             vol.Optional(CONF_ON_DECK, default=self._config_entry.data.get(CONF_ON_DECK, False)): vol.All(bool),
         })

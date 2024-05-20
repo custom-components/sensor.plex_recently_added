@@ -10,6 +10,8 @@ CONF_SECTION_TYPES: Final = 'section_types'
 ALL_SECTION_TYPES: Final = ["movie", "show", "artist", "photo"]
 CONF_SECTION_LIBRARIES: Final = 'section_libraries'
 CONF_EXCLUDE_KEYWORDS: Final = 'exclude_keywords'
+CONF_SECTION_LIBRARIES_LABEL: Final = 'Which libraries to consider:'
+CONF_EXCLUDE_KEYWORDS_LABEL: Final = 'Keyword to be exclude from the sensor:'
 CONF_ON_DECK: Final = 'on_deck'
 CONF_VERIFY_SSL: Final = 'verify_ssl'
 
