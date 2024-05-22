@@ -1,6 +1,7 @@
 {
   "domain": "plex_recently_added",
   "name": "Plex Recently Added",
+  "after_dependencies": ["http"],
   "codeowners": ["@maykar"],
   "config_flow": true,
   "dependencies": [],
