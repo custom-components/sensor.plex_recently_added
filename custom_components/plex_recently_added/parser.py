@@ -19,6 +19,9 @@ def parse_library(root):
 
     return output
 
+import logging
+_LOGGER = logging.getLogger(__name__)
+
 def parse_data(data, max, base_url, token, identifier, section_key, images_base_url, is_all = False):
     if is_all:
         sorted_data = []
@@ -68,6 +71,20 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
         data_output["poster"] = (f'{images_base_url}?path={thumb}') if thumb else ""
         data_output["fanart"] = (f'{images_base_url}?path={art}') if art else ""
         data_output["deep_link"] = deep_link if identifier else None
+
+        _LOGGER.warn({
+            "fanart": {
+                "self": (f'{images_base_url}?path={item.get("art", None)}') if item.get("art", None) else "",
+                "grandparent": (f'{images_base_url}?path={item.get("grandparentArt", None)}') if item.get("grandparentArt", None) else "",
+                "current": (f'{images_base_url}?path={art}') if art else ""
+            },
+            "poster": {
+                "self": (f'{images_base_url}?path={item.get("thumb", None)}') if item.get("thumb", None) else "",
+                "parent": (f'{images_base_url}?path={item.get("parentThumb", None)}') if item.get("parentThumb", None) else "",
+                "grandparent": (f'{images_base_url}?path={item.get("grandparentThumb", None)}') if item.get("grandparentThumb", None) else "",
+                "current": (f'{images_base_url}?path={thumb}') if thumb else ""
+            }
+        })
 
         output.append(data_output)
 
