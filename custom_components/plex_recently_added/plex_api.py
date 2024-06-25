@@ -39,6 +39,33 @@ class PlexApi():
         self._exclude_keywords = exclude_keywords
         self._images_base_url = f'/{name.lower() + "_" if len(name) > 0 else ""}plex_recently_added'
     
+    async def get_trailer_url(self, item_key):
+        extras_url = f'http{self._ssl}://{self._host}:{self._port}/library/metadata/{item_key}/extras?X-Plex-Token={self._token}'
+        try:
+            extras_res = await self._hass.async_add_executor_job(
+                requests.get,
+                extras_url,
+                {
+                    "headers": {
+                        "User-agent": USER_AGENT,
+                        "Accept": ACCEPTS,
+                    },
+                    "timeout": 10
+                }
+            )
+            check_headers(extras_res)
+            root = ElementTree.fromstring(extras_res.text)
+            
+            for video in root.findall(".//Video"):
+                if video.get("type") == "clip" and video.get("subtype") == "trailer":
+                    part = video.find(".//Part")
+                    if part is not None and part.get("key"):
+                        return f'http{self._ssl}://{self._host}:{self._port}{part.get("key")}&X-Plex-Token={self._token}'
+            
+        except Exception as e:
+            print(f"Error fetching trailer: {str(e)}")
+        return None
+
     async def update(self):
         info_url = 'http{0}://{1}:{2}'.format(
             self._ssl,
@@ -117,6 +144,11 @@ class PlexApi():
             check_headers(sub_sec)
             root = ElementTree.fromstring(sub_sec.text)
             parsed_libs = parse_library(root)
+            
+            # Fetch trailer URLs for each item
+            for item in parsed_libs:
+                item['trailer'] = await self.get_trailer_url(item['ratingKey'])
+            
             if library["type"] not in data['all']:
                 data['all'][library["type"]] = []
             data['all'][library["type"]] += parsed_libs
