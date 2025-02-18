@@ -34,8 +34,10 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
 
     output = []
     for item in sorted_data:
-        thumb = item.get("thumb", item.get("parentThumb", item.get("grandparentThumb", None)))
-        art = item.get("art", item.get("grandparentArt", None))
+        media_type_map = {'movie': ('thumb', 'art'), 'episode': ('grandparentThumb', 'grandparentArt')}
+        thumb_key, art_key = media_type_map.get(item['type'], ('thumb', 'grandparentArt'))
+        thumb = item.get(thumb_key, item.get("parentThumb", item.get("grandparentThumb", None)))
+        art = item.get(art_key, item.get("grandparentArt", None))
         deep_link_position = -1
         if section_key == "artist":
             deep_link_position = -2
@@ -68,6 +70,7 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
         data_output["genres"] = ", ".join([genre['tag'] for genre in item.get('Genre', [])][:3])
         data_output["rating"] = ('\N{BLACK STAR} ' + str(item.get("rating"))) if int(float(item.get("rating", 0))) > 0 else ''
         data_output['summary'] = item.get('summary', '')
+        data_output['trailer'] = item.get('trailer')
         data_output["poster"] = (f'{images_base_url}?path={thumb}') if thumb else ""
         data_output["fanart"] = (f'{images_base_url}?path={art}') if art else ""
         data_output["deep_link"] = deep_link if identifier else None
@@ -89,5 +92,4 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
         output.append(data_output)
 
     return output
-
 
