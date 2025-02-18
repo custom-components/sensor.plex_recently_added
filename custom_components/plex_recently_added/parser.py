@@ -19,6 +19,18 @@ def parse_library(root):
 
     return output
 
+def extract_metadata_and_type(path):
+    pattern = re.compile(r"/library/metadata/(\d+)/(thumb|art)/(\d+)")
+    match = pattern.search(path)
+    
+    if match:
+        metadata_id = match.group(1)
+        art_type = match.group(2)
+        art_id = match.group(3)
+        return metadata_id, art_type, art_id
+    
+    return None
+
 def parse_data(data, max, base_url, token, identifier, section_key, images_base_url, is_all = False):
     if is_all:
         sorted_data = []
@@ -68,8 +80,10 @@ def parse_data(data, max, base_url, token, identifier, section_key, images_base_
         data_output["rating"] = ('\N{BLACK STAR} ' + str(item.get("rating"))) if int(float(item.get("rating", 0))) > 0 else ''
         data_output['summary'] = item.get('summary', '')
         data_output['trailer'] = item.get('trailer')
-        data_output["poster"] = (f'{images_base_url}?path={thumb}') if thumb else ""
-        data_output["fanart"] = (f'{images_base_url}?path={art}') if art else ""
+        thumb_IDs = extract_metadata_and_type(thumb)
+        data_output["poster"] = (f'{images_base_url}?metadata={thumb_IDs[0]}&thumb={thumb_IDs[2]}') if thumb_IDs else ""
+        art_IDs = extract_metadata_and_type(art)
+        data_output["fanart"] = (f'{images_base_url}?metadata={art_IDs[0]}&art={art_IDs[2]}') if art_IDs else ""
         data_output["deep_link"] = deep_link if identifier else None
 
         output.append(data_output)
