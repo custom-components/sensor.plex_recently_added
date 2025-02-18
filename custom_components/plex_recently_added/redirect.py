@@ -24,8 +24,10 @@ class ImagesRedirect(HomeAssistantView):
         self.url = f'/{config_entry.data[CONF_NAME].lower() + "_" if len(config_entry.data[CONF_NAME]) > 0 else ""}plex_recently_added'
 
     async def get(self, request):
-        path = request.query.get("path", "")
-        url = f'{self._base_url}{path}?X-Plex-Token={self._token}'
+        metadataId = int(request.query.get("metadata", 0))
+        thumbId = int(request.query.get("thumb", 0))
+        artId = int(request.query.get("art", 0))
+        url = f'{self._base_url}/library/metadata/{metadataId}/{"thumb" if thumbId != 0 else "art"}/{thumbId if thumbId != 0 else artId if artId != 0 else ""}?X-Plex-Token={self._token}'
 
         async with ClientSession() as session:
             async with session.get(url) as res:
