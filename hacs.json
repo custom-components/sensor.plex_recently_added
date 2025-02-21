@@ -1,4 +1,6 @@
 {
+    "filename": "plex_recently_added.zip",
     "name": "Plex Recently Added",
-    "content_in_root": false
+    "content_in_root": false,
+    "zip_release": true
 }
