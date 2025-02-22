@@ -46,18 +46,5 @@ jobs:
       - name: Generate final upload URL
         id: generate_upload_url
         run: |
-          if [[ -n "${{ env.release_id }}" ]]; then
-            echo "generated_url=https://uploads.github.com/repos/${{ github.repository }}/releases/${{ env.release_id }}/assets?name=plex_recently_added.zip" >> $GITHUB_ENV
-          else
-            echo "generated_url=${{ steps.create_release.outputs.upload_url }}?name=plex_recently_added.zip" >> $GITHUB_ENV
-          fi
+          echo "generated_url=https://github.com/${{ github.repository }}/archive/refs/tags/${{ github.ref_name }}.zip" >> $GITHUB_ENV
 
-      - name: Upload ZIP file to Release
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ env.generated_url }}
-          asset_path: output/plex_recently_added.zip
-          asset_name: plex_recently_added.zip
-          asset_content_type: application/zip
