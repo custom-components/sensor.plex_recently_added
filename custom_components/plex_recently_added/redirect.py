@@ -1,9 +1,12 @@
 from homeassistant.components.http import HomeAssistantView
 from homeassistant.config_entries import ConfigEntry
-from aiohttp import web
+from aiohttp import web, ClientError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 import requests
 import os
+import logging
+
+_LOGGER = logging.getLogger(__name__)
 
 from homeassistant.const import (
     CONF_API_KEY, 
@@ -44,25 +47,30 @@ class ImagesRedirect(HomeAssistantView):
         if if_none:
             fwd_headers["If-None-Match"] = if_none
 
-        async with self._session.get(url, headers=fwd_headers, timeout=10) as res:
-            if res.status == 304:
-                return web.Response(status=304)
+        try:
+            async with self._session.get(url, headers=fwd_headers, timeout=10) as res:
+                if res.status == 304:
+                    return web.Response(status=304)
 
-            if res.status == 200:
-                body = await res.read()
-                headers = {
-                    "Content-Type": res.headers.get("Content-Type", "image/jpeg"),
-                    # Strong client caching: immutable for a year cuts repeat requests
-                    "Cache-Control": "public, max-age=31536000, immutable",
-                }
-                etag = res.headers.get("ETag")
-                last_mod = res.headers.get("Last-Modified")
-                if etag:
-                    headers["ETag"] = etag
-                if last_mod:
-                    headers["Last-Modified"] = last_mod
-                return web.Response(body=body, headers=headers)
+                ctype = res.headers.get("Content-Type", "")
+                if res.status == 200 and ctype.startswith("image/"):
+                    body = await res.read()
+                    headers = {
+                        "Content-Type": ctype or "image/jpeg",
+                        "Cache-Control": "public, max-age=31536000, immutable",
+                    }
+                    etag = res.headers.get("ETag")
+                    last_mod = res.headers.get("Last-Modified")
+                    if etag:
+                        headers["ETag"] = etag
+                    if last_mod:
+                        headers["Last-Modified"] = last_mod
+                    return web.Response(body=body, headers=headers)
 
-            return web.HTTPNotFound()
+                _LOGGER.debug("Missing artwork (status=%s, ctype=%s) url=%s", res.status, ctype, url)
+                return web.HTTPNotFound()
+        except ClientError:
+            _LOGGER.debug("Upstream image fetch failed url=%s", url)
+            return web.HTTPBadGateway()
 
 
