@@ -4,7 +4,7 @@
       "user": {
         "data": {
           "name": "Name",
-          "host": "Plex address",
+          "host": "Full DNS name",
           "port": "Plex port",
           "api_key": "Plex token",
           "ssl": "SSL",
@@ -21,7 +21,7 @@
         "description": "Update your Plex server connection settings",
         "data": {
           "name": "Name",
-          "host": "Plex address",
+          "host": "Full DNS name",
           "port": "Plex port",
           "api_key": "Plex token",
           "ssl": "SSL",
